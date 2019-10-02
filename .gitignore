@@ -1,0 +1,5 @@
+src/.env
+.env
+.idea/
+*.env
+*/*.env
