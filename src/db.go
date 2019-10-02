@@ -7,15 +7,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"strings"
 )
 
 func getDbList() []string {
 	cmd := exec.Command("psql",
-		"-h", "postgres",
-		"-U", "postgres",
 		"-t", "-A", `-F","`,
 		"-c", "SELECT datname FROM pg_database WHERE datname NOT IN ('postgres', 'template1', 'template2');")
 	stdout, err := cmd.Output()
@@ -43,14 +40,7 @@ func CreateBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	list := getDbList()
 
 	for _, v := range list {
-		cmd := exec.Command("pg_dump",
-			"-h", "postgres",
-			"-U", "postgres",
-			"-Fc",
-			v)
-		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, "PGPASSWORD=secret")
-
+		cmd := exec.Command("pg_dump", "-Fc", v)
 		res, err := cmd.Output()
 		if err != nil {
 			println(err.Error())
@@ -69,31 +59,18 @@ func CreateRestore(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 
 	for _, v := range list {
 		cmd := exec.Command("dropdb",	v)
-		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, "PGHOST=postgres")
-		cmd.Env = append(cmd.Env, "PGPORT=5432")
-		cmd.Env = append(cmd.Env, "PGUSER=postgres")
-
 		_, err := cmd.Output()
 		if err != nil {
 			println(err.Error())
 		}
 
 		cmd = exec.Command("createdb",	v)
-		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, "PGHOST=postgres")
-		cmd.Env = append(cmd.Env, "PGPORT=5432")
-		cmd.Env = append(cmd.Env, "PGUSER=postgres")
-
 		_, err = cmd.Output()
 		if err != nil {
 			println(err.Error())
 		}
 
 		cmd = exec.Command("pg_restore",	"-d", v, "/tmp/backup_" + v + ".sql")
-		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, "PGPASSWORD=secret")
-
 		_, err = cmd.Output()
 		if err != nil {
 			println(err.Error())
