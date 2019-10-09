@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -14,7 +15,7 @@ import (
 func getDbList() []string {
 	cmd := exec.Command("psql",
 		"-t", "-A", `-F","`,
-		"-c", "SELECT datname FROM pg_database WHERE datname NOT IN ('postgres', 'template1', 'template2');")
+		"-c", "SELECT datname FROM pg_database WHERE datname NOT IN ('postgres', 'template0', 'template1', 'template2');")
 	stdout, err := cmd.Output()
 	if err != nil {
 		println(err.Error())
@@ -26,6 +27,11 @@ func getDbList() []string {
 
 func GetDB(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	list := getDbList()
+
+	dbParam := r.URL.Query().Get("db")
+	if dbParam != "" {
+		list = strings.Split(dbParam, ",")
+	}
 
 	js, err := json.Marshal(list)
 	if err != nil {
@@ -39,6 +45,13 @@ func GetDB(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 func CreateBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	list := getDbList()
 
+	dbParam := r.URL.Query().Get("db")
+	if dbParam != "" {
+		list = strings.Split(dbParam, ",")
+	}
+
+	os.MkdirAll("/tmp/backup/", 0755)
+
 	for _, v := range list {
 		cmd := exec.Command("pg_dump", "-Fc", v)
 		res, err := cmd.Output()
@@ -46,9 +59,15 @@ func CreateBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			println(err.Error())
 		}
 
-		if err := ioutil.WriteFile("/tmp/backup_" + v + ".sql", res, 0644); err != nil {
+		if err := ioutil.WriteFile("/tmp/backup/backup_" + v + ".sql", res, 0644); err != nil {
 			log.Fatalln(err)
 		}
+	}
+
+	cmd := exec.Command("zip", "-r", "--password", cfg.Password, "/tmp/backup.zip", "/tmp/backup/")
+	_, err := cmd.Output()
+	if err != nil {
+		println(err.Error())
 	}
 
 	fmt.Fprint(w, "OK")
@@ -56,6 +75,11 @@ func CreateBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 func CreateRestore(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	list := getDbList()
+
+	dbParam := r.URL.Query().Get("db")
+	if dbParam != "" {
+		list = strings.Split(dbParam, ",")
+	}
 
 	for _, v := range list {
 		cmd := exec.Command("dropdb",	v)
@@ -70,7 +94,7 @@ func CreateRestore(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 			println(err.Error())
 		}
 
-		cmd = exec.Command("pg_restore",	"-d", v, "/tmp/backup_" + v + ".sql")
+		cmd = exec.Command("pg_restore",	"-d", v, "/tmp/backup/backup_" + v + ".sql")
 		_, err = cmd.Output()
 		if err != nil {
 			println(err.Error())

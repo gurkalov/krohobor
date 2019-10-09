@@ -11,7 +11,7 @@ RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /g
 
 FROM alpine:latest
 
-RUN apk --update add postgresql-client
+RUN apk --update add postgresql-client zip
 
 WORKDIR /root/
 

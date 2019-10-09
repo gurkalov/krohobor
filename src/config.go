@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	Port          int
+	Port int
+	Password string
 }
 
 var cfg Config
@@ -19,8 +20,14 @@ func InitConfig() {
 		port, _ := strconv.Atoi(os.Getenv("APP_PORT"))
 		cfg.Port = port
 
-		d1 := []byte("postgres:5432:postgres:postgres:secret")
-		if err := ioutil.WriteFile("/root/.pgpass", d1, 0600); err != nil {
+		cfg.Password = os.Getenv("APP_PASSWORD")
+
+		pgpass := []byte(os.Getenv("PGHOST") +
+			":" + os.Getenv("PGPORT") +
+			":postgres" +
+			":" + os.Getenv("PGUSER") +
+			":" + os.Getenv("PGPASSWORD"))
+		if err := ioutil.WriteFile("/root/.pgpass", pgpass, 0600); err != nil {
 			log.Fatalln(err)
 		}
 	}
