@@ -8,6 +8,7 @@ services:
     environment:
       APP_PORT: 80
       APP_PASSWORD: ${APP_PASSWORD}
+      APP_CATALOG: ${APP_CATALOG}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
@@ -30,6 +31,12 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  cron:
+    image: ${IMAGE_CRON}
+    restart: always
+    environment:
+      CRON_STRINGS: "0 * * * * wget --post-data ''  http://app/v1/backup"
 
   ppa:
     image: ${IMAGE_PPA}

@@ -1,47 +1,70 @@
-package main
+package storage
 
 import (
+	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/julienschmidt/httprouter"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/s3manager"
 	"io"
-	"log"
-	"net/http"
 	"os"
 	"runtime/debug"
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3/s3manager"
 )
 
-func UploadAws(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+type AwsS3 struct {
+	Bucket string
+}
 
-	fileParam := "/tmp/backup.zip"
-
-	cfg, err := external.LoadDefaultAWSConfig()
+func (s AwsS3) Read(filename string) error {
+	fileParam := "/tmp/download_backup.zip"
+	file, err := os.Create(fileParam)
 	if err != nil {
-		panic("unable to load SDK config, " + err.Error())
+		return err
 	}
 
-	config := cfg
-	uploader := s3manager.NewUploader(config)
+	defer file.Close()
 
-	file, err := os.Open(fileParam)
+	config, err := external.LoadDefaultAWSConfig()
 	if err != nil {
-		log.Fatalf("failed to open file, %v", err)
+		return err
+	}
+
+	downloader := s3manager.NewDownloader(config)
+	_, err = downloader.Download(file,
+		&s3.GetObjectInput{
+			Bucket: aws.String(s.Bucket),
+			Key:    aws.String(filename),
+		})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s AwsS3) Write(filename string) error {
+	config, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return err
+	}
+
+	uploader := s3manager.NewUploader(config)
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
 	}
 	defer file.Close()
 
 	readLogger := NewReadLogger(file, config.Logger)
 
-	bucket := "sr2020-backup"
 	dt := time.Now()
 	nowDate := dt.Format("2006-01-02_15-04")
 	key := "backup_" + nowDate + ".zip"
 
-	resp, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: &bucket,
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: &s.Bucket,
 		Key:    &key,
 		Body:   readLogger,
 	}, func(u *s3manager.Uploader) {
@@ -50,7 +73,42 @@ func UploadAws(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		})
 	})
 
-	fmt.Println(resp, err)
+	return err
+}
+
+func (s AwsS3) Delete(filename string) error {
+	config, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return err
+	}
+
+	svc := s3.New(config)
+	svc.DeleteObjectRequest(&s3.DeleteObjectInput{
+		Bucket: &s.Bucket,
+		Key:    aws.String(filename),
+	})
+
+	return nil
+}
+
+func (s AwsS3) List() ([]string, error) {
+	config, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return []string{}, err
+	}
+
+	var result []string
+	svc := s3.New(config)
+	req := svc.ListObjectsRequest(&s3.ListObjectsInput{Bucket: &s.Bucket})
+	p := s3.NewListObjectsPaginator(req)
+	for p.Next(context.TODO()) {
+		page := p.CurrentPage()
+		for _, obj := range page.Contents {
+			result = append(result, *obj.Key)
+		}
+	}
+
+	return result, nil
 }
 
 // Logger is a logger use for logging the readers usage.

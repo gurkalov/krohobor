@@ -9,12 +9,14 @@ import (
 
 func main() {
 	InitConfig()
+	InitManager()
 
 	router := httprouter.New()
 	router.GET("/v1/db", GetDB)
-	router.GET("/v1/backup", CreateBackup)
-	router.GET("/v1/restore", CreateRestore)
-	router.GET("/v1/upload", UploadAws)
+	router.GET("/v1/backup", ListBackup)
+	router.POST("/v1/backup", CreateBackup)
+	router.POST("/v1/backup/:name", RestoreBackup)
+	router.DELETE("/v1/backup/:name", DeleteBackup)
 
 	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(cfg.Port), router))
 }
