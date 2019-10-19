@@ -19,10 +19,10 @@ type Manager struct {
 var manager Manager
 
 func InitManager() {
-	manager = Manager{cfg.Password,
-		&storage.AwsS3{cfg.Catalog},
+	manager = Manager{cfg.App.Password,
+		&storage.AwsS3{cfg.App.Catalog},
 		&db.Postgres{},
-		&archive.Zip{cfg.Password},
+		&archive.Zip{cfg.App.Password},
 	}
 }
 
@@ -33,7 +33,9 @@ func (s Manager) Backup(dbname []string) error {
 	for _, v := range dbname {
 		db := s.DB
 		db.Init(v)
-		db.Dump(archDirectory + "/backup_" + v + ".sql")
+		if err := db.Dump(archDirectory + "/backup_" + v + ".sql"); err != nil {
+			return err
+		}
 	}
 
 	if err := s.Archive.Archive(archFilename, archDirectory); err != nil {
@@ -41,6 +43,36 @@ func (s Manager) Backup(dbname []string) error {
 	}
 
 	if err := s.Storage.Write(archFilename); err != nil {
+		return err
+	}
+
+	if err := os.Remove(archFilename); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s Manager) BackupAll() error {
+	archFilename := "/tmp/backup.zip"
+	archDirectory := "/tmp/backup"
+	os.MkdirAll(archDirectory, 0755)
+
+	db := s.DB
+	db.Init("postgres")
+	if err := db.DumpAll(archDirectory + "/backup_all.sql"); err != nil {
+		return err
+	}
+
+	if err := s.Archive.Archive(archFilename, archDirectory); err != nil {
+		return err
+	}
+
+	if err := s.Storage.Write(archFilename); err != nil {
+		return err
+	}
+
+	if err := os.Remove(archFilename); err != nil {
 		return err
 	}
 
@@ -52,7 +84,7 @@ func (s Manager) Restore(dbname []string, filename string) error {
 		return err
 	}
 
-	archDirectory := "/tmp/download_backup/"
+	archDirectory := "/tmp/download_backup"
 	if err := s.Archive.Unarchive("/tmp/download_backup.zip", archDirectory); err != nil {
 		return err
 	}
@@ -62,7 +94,28 @@ func (s Manager) Restore(dbname []string, filename string) error {
 		db.Init(v)
 		db.Drop()
 		db.Create()
-		db.Restore(archDirectory + "/backup_" + v + ".sql")
+		if err := db.Restore(archDirectory + "/backup_" + v + ".sql"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s Manager) RestoreAll(filename string) error {
+	if err := s.Storage.Read(filename); err != nil {
+		return err
+	}
+
+	archDirectory := "/tmp/download_backup"
+	if err := s.Archive.Unarchive("/tmp/download_backup.zip", archDirectory); err != nil {
+		return err
+	}
+
+	db := s.DB
+	db.Init("postgres")
+	if err := db.RestoreAll(archDirectory + "/backup_all.sql"); err != nil {
+		return err
 	}
 
 	return nil

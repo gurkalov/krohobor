@@ -26,32 +26,37 @@ func GetDB(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func CreateBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	list := manager.List()
-
 	dbParam := r.URL.Query().Get("db")
 	if dbParam != "" {
-		list = strings.Split(dbParam, ",")
-	}
-
-	if err := manager.Backup(list); err != nil {
-		fmt.Fprint(w, "ERROR")
-		return
+		list := strings.Split(dbParam, ",")
+		if err := manager.Backup(list); err != nil {
+			fmt.Fprint(w, "ERROR")
+			return
+		}
+	} else {
+		if err := manager.BackupAll(); err != nil {
+			fmt.Fprint(w, "ERROR")
+			return
+		}
 	}
 
 	fmt.Fprint(w, "OK")
 }
 
 func RestoreBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	list := manager.List()
+	backupFile := ps.ByName("name")
 	dbParam := r.URL.Query().Get("db")
 	if dbParam != "" {
-		list = strings.Split(dbParam, ",")
-	}
-
-	backupFile := ps.ByName("name")
-	if err := manager.Restore(list, backupFile); err != nil {
-		fmt.Fprint(w, "ERROR")
-		return
+		list := strings.Split(dbParam, ",")
+		if err := manager.Restore(list, backupFile); err != nil {
+			fmt.Fprint(w, "ERROR: ", err)
+			return
+		}
+	} else {
+		if err := manager.RestoreAll(backupFile); err != nil {
+			fmt.Fprint(w, "ERROR: ", err)
+			return
+		}
 	}
 
 	fmt.Fprint(w, "OK")

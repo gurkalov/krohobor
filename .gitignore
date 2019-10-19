@@ -3,3 +3,4 @@ src/.env
 .idea/
 *.env
 */*.env
+*/*.pgpass

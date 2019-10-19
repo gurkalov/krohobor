@@ -53,7 +53,9 @@ func (s File) List() ([]string, error) {
 	var result []string
 
 	err := filepath.Walk(s.Catalog, func(path string, info os.FileInfo, err error) error {
-		result = append(result, path)
+		if s.Catalog != path {
+			result = append(result, path)
+		}
 		return nil
 	})
 	if err != nil {

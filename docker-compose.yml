@@ -36,7 +36,7 @@ services:
     image: ${IMAGE_CRON}
     restart: always
     environment:
-      CRON_STRINGS: "0 * * * * wget --post-data ''  http://app/v1/backup"
+      CRON_STRINGS: "0 * * * * wget --post-data '' http://app/v1/backup"
 
   ppa:
     image: ${IMAGE_PPA}

@@ -18,5 +18,5 @@ func main() {
 	router.POST("/v1/backup/:name", RestoreBackup)
 	router.DELETE("/v1/backup/:name", DeleteBackup)
 
-	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(cfg.Port), router))
+	log.Fatal(http.ListenAndServe(":" + strconv.Itoa(cfg.App.Port), router))
 }
