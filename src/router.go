@@ -62,6 +62,28 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	fmt.Fprint(w, "OK")
 }
 
+func RestoreLastBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	bucket := manager.Storage
+	list, err := bucket.List()
+	if err != nil {
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	if list == nil {
+		fmt.Fprint(w, "List is nil")
+		return
+	}
+
+	backupFile := list[len(list) - 1]
+	if err := manager.RestoreAll(backupFile); err != nil {
+		fmt.Fprint(w, "ERROR: ", err)
+		return
+	}
+
+	fmt.Fprint(w, "OK")
+}
+
 func ListBackup(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	bucket := manager.Storage
 	list, err := bucket.List()
