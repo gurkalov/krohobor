@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"flag"
@@ -28,9 +28,9 @@ type PostgresConfig struct {
 	Password string
 }
 
-var cfg Config
+func Load() Config {
+	cfg := Config{}
 
-func InitConfig() {
 	configFile := flag.String("config", ".env", "a string")
 	if _, err := toml.DecodeFile(*configFile, &cfg); err != nil {
 		port, _ := strconv.Atoi(os.Getenv("APP_PORT"))
@@ -54,4 +54,6 @@ func InitConfig() {
 	if err := ioutil.WriteFile(".pgpass", pgpass, 0600); err != nil {
 		log.Fatalln(err)
 	}
+
+	return cfg
 }

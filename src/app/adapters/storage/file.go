@@ -36,7 +36,9 @@ func (s File) Write(filename string) error {
 	nowDate := dt.Format("2006-01-02_15-04")
 	key := "backup_" + nowDate + ".zip"
 
-	os.MkdirAll(s.Catalog, 0755)
+	if err := os.MkdirAll(s.Catalog, 0755); err != nil {
+		return err
+	}
 	err = ioutil.WriteFile(s.Catalog + "/" + key, file, 0644)
 	if err != nil {
 		return err

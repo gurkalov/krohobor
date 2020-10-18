@@ -1,6 +1,6 @@
 package storage
 
-type Storage interface {
+type Interface interface {
 	Write(string) error
 	Read(string) error
 	Delete(string) error

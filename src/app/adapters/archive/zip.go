@@ -1,6 +1,7 @@
 package archive
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 )
@@ -18,6 +19,9 @@ func (s Zip) Archive(file, dir string) error {
 	}
 	_, err := cmd.Output()
 	if err != nil {
+		if execErr, ok := err.(*exec.ExitError); ok {
+			return errors.New(string(execErr.Stderr))
+		}
 		return err
 	}
 
@@ -25,7 +29,9 @@ func (s Zip) Archive(file, dir string) error {
 }
 
 func (s Zip) Unarchive(file, dir string) error {
-	os.RemoveAll(dir)
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}
 
 	var cmd *exec.Cmd
 	if "" != s.Password {
@@ -36,6 +42,9 @@ func (s Zip) Unarchive(file, dir string) error {
 
 	_, err := cmd.Output()
 	if err != nil {
+		if execErr, ok := err.(*exec.ExitError); ok {
+			return errors.New(string(execErr.Stderr))
+		}
 		return err
 	}
 
