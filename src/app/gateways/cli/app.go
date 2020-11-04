@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"github.com/urfave/cli/v2"
 	"krohobor/app/adapters/archive"
 	"krohobor/app/adapters/config"
@@ -31,6 +30,11 @@ func App(cfg config.Config) *cli.App {
 			Value: "app",
 			Usage: "database",
 		},
+		&cli.StringFlag{
+			Name: "name",
+			Value: "",
+			Usage: "Backup name",
+		},
 		&cli.IntFlag{
 			Name: "port",
 			Value: 80,
@@ -46,15 +50,6 @@ func App(cfg config.Config) *cli.App {
 			Action:  func(c *cli.Context) error {
 				router := httpserver.Router(cfg)
 				return http.ListenAndServe(":" + strconv.Itoa(c.Int("port")), router)
-			},
-		},
-		{
-			Name:    "complete",
-			Aliases: []string{"c"},
-			Usage:   "complete a task on the list",
-			Action:  func(c *cli.Context) error {
-				fmt.Println("completed task: ", c.Args().First())
-				return nil
 			},
 		},
 		{
@@ -83,10 +78,37 @@ func App(cfg config.Config) *cli.App {
 						UseCase: usecases.NewDbDumpAll(dbPostgres, zipArchive, s3Storage),
 					}).Action(cfg),
 				},
+				{
+					Name:  "dump",
+					Usage: "backup database",
+					Action: (actions.DbDump{
+						UseCase: usecases.NewDbDump(dbPostgres, zipArchive, s3Storage),
+					}).Action(cfg),
+				},
+				{
+					Name:  "restore",
+					Usage: "restore backup",
+					Action: (actions.DbRestore{
+						UseCase: usecases.NewDbRestore(dbPostgres, zipArchive, s3Storage),
+					}).Action(cfg),
+				},
+			},
+		},
+		{
+			Name:        "backup",
+			Aliases:     []string{"backup"},
+			Usage:       "options for task templates",
+			Subcommands: []*cli.Command{
+				{
+					Name:  "list",
+					Usage: "list of backups",
+					Action: (actions.BackupList{
+						UseCase: usecases.NewBackupList(s3Storage),
+					}).Action(cfg),
+				},
 			},
 		},
 	}
-
 
 	return app
 }

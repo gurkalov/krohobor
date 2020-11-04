@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/s3manager"
 	"io"
+	"krohobor/app/adapters/archive"
 	"os"
 	"runtime/debug"
 	"time"
@@ -15,20 +16,21 @@ import (
 
 type AwsS3 struct {
 	Bucket string
+	Archive archive.Interface
 }
 
-func (s AwsS3) Read(filename string) error {
-	fileParam := "/tmp/download_backup.zip"
+func (s AwsS3) Read(filename string) (string, error) {
+	fileParam := "/tmp/download_backup.tmp"
 	file, err := os.Create(fileParam)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer file.Close()
 
 	config, err := external.LoadDefaultAWSConfig()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	downloader := s3manager.NewDownloader(config)
@@ -38,10 +40,18 @@ func (s AwsS3) Read(filename string) error {
 			Key:    aws.String(filename),
 		})
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	if s.Archive != nil {
+		if file, err := s.Archive.Unarchive(fileParam); err == nil {
+			return file, err
+		} else {
+			return "", err
+		}
+	}
+
+	return fileParam, nil
 }
 
 func (s AwsS3) Write(filename string) error {

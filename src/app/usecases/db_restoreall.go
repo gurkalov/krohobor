@@ -43,9 +43,9 @@ func (d *DbRestoreAll) Execute (request DbRestoreAllRequest) (DbRestoreAllRespon
 		return response, err
 	}
 
-	if err := d.db.RestoreAll(request.Filename); err != nil {
-		return response, err
-	}
+	//if err := d.db.RestoreAll(request.Filename); err != nil {
+	//	return response, err
+	//}
 
 	return response, nil
 }

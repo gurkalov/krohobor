@@ -35,7 +35,7 @@ func Router(cfg config.Config) *httprouter.Router {
 	}
 
 	dbRestoreHandler := handlers.DbRestore{
-		UseCase: usecases.NewDbRestore(dbPostgres),
+		UseCase: usecases.NewDbRestore(dbPostgres, zipArchive, s3Storage),
 	}
 
 	dbRestoreAllHandler := handlers.DbRestoreAll{

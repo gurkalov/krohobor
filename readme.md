@@ -12,3 +12,5 @@ Show grants for table in database
 ```sql
 \dp
 ```
+
+

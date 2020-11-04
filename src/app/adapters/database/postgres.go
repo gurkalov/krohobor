@@ -37,6 +37,7 @@ func (p Postgres) List() ([]domain.Database, error) {
 	dbs := strings.Split(strings.Trim(string(stdout), "\n"), "\n")
 	for _, v := range dbs {
 		cols := strings.Split(strings.ReplaceAll(v, `"`, ""), ",")
+		// TODO:
 		size, err := strconv.Atoi(cols[1])
 		if err != nil {
 			return list, err
@@ -92,31 +93,17 @@ func (p Postgres) DumpAll(filename string) error {
 	return nil
 }
 
-func (p Postgres) Restore(dbname, filename string) error {
+func (p Postgres) Restore(filename string) error {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return err
 	}
 
-	cmd := exec.Command("pg_restore",	"-d", dbname, filename, "-h", p.cfg.Host, "-U", p.cfg.User)
-	_, err = cmd.Output()
-	if err != nil {
-		if execErr, ok := err.(*exec.ExitError); ok {
-			return errors.New(string(execErr.Stderr))
-		}
-		return err
-	}
+	cmd := exec.Command("psql",	"-f", filename, p.cfg.DB, "-h", p.cfg.Host, "-p", p.cfg.Port, "-U", p.cfg.User)
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + p.cfg.Password,
+	)
 
-	return nil
-}
-
-func (p Postgres) RestoreAll(filename string) error {
-	_, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return err
-	}
-
-	cmd := exec.Command("psql",	"-f", filename, p.cfg.DB, "-h", p.cfg.Host, "-U", p.cfg.User)
 	_, err = cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {

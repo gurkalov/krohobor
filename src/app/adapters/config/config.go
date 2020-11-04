@@ -40,7 +40,7 @@ func Load() Config {
 
 		cfg.Postgres.Host = os.Getenv("PGHOST")
 		cfg.Postgres.Port = os.Getenv("PGPORT")
-		cfg.Postgres.DB = "*"
+		cfg.Postgres.DB = os.Getenv("PGDB")
 		cfg.Postgres.User = os.Getenv("PGUSER")
 		cfg.Postgres.Password = os.Getenv("PGPASSWORD")
 	}
@@ -48,7 +48,7 @@ func Load() Config {
 	pg := cfg.Postgres
 	pgpass := []byte(pg.Host +
 		":" + pg.Port +
-		":*" +
+		":" + pg.DB +
 		":" + pg.User +
 		":" + pg.Password)
 	if err := ioutil.WriteFile(".pgpass", pgpass, 0600); err != nil {

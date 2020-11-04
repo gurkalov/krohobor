@@ -11,19 +11,19 @@ type File struct {
 	Catalog string
 }
 
-func (s File) Read(filename string) error {
+func (s File) Read(filename string) (string, error) {
 	fileParam := "/tmp/download_backup.zip"
 	input, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return err
+		return fileParam, err
 	}
 
 	err = ioutil.WriteFile(fileParam, input, 0644)
 	if err != nil {
-		return err
+		return fileParam, err
 	}
 
-	return nil
+	return fileParam, nil
 }
 
 func (s File) Write(filename string) error {
