@@ -3,9 +3,9 @@ package archive
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 type Zip struct {
@@ -17,19 +17,47 @@ func NewZip(dir, password string) Zip {
 	return Zip{dir,  password}
 }
 
-func NewZipMock(dir, password, mockDir string) Zip {
-	mockDirPath := dir + "/" + mockDir
+func NewZipMock(dir, password string) Zip {
+	if err := os.RemoveAll(dir); err != nil {
+		panic(err)
+	}
 
+	mockDirPath := dir + "/mock"
+
+	zip := Zip{dir,  password}
 	if err := os.MkdirAll(mockDirPath, os.ModePerm); err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+	if err := zip.Archive(dir + "/test-mock-empty-folder.zip", mockDirPath); err != nil {
+		panic(err)
 	}
 
-	d1 := []byte("hello\ngo\n")
+	d1 := []byte("hello")
 	if err := ioutil.WriteFile(mockDirPath + "/file1", d1, 0644); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	return Zip{dir,  password}
+	if err := ioutil.WriteFile(mockDirPath + "/file2", d1, 0644); err != nil {
+		panic(err)
+	}
+
+	if err := zip.Archive(dir + "/test-mock-with-password.zip", mockDirPath + "/file2"); err != nil {
+		panic(err)
+	}
+
+	zipWithoutPass := Zip{dir,  ""}
+	if err := zipWithoutPass.Archive(dir + "/test-mock-without-password.zip", mockDirPath + "/file2"); err != nil {
+		panic(err)
+	}
+
+	return zip
+}
+
+func (s Zip) Check() error {
+	cmd := exec.Command("zip", "--version")
+	_, err := cmd.Output()
+
+	return err
 }
 
 func (s Zip) Archive(file, dir string) error {
@@ -51,18 +79,14 @@ func (s Zip) Archive(file, dir string) error {
 }
 
 func (s Zip) Unarchive(file string) (string, error) {
-	if err := os.RemoveAll(s.Dir); err != nil {
-		return "", err
-	}
-
 	var cmd *exec.Cmd
 	if "" != s.Password {
-		cmd = exec.Command("unzip", "-j", "-P", s.Password, file, "-d", s.Dir)
+		cmd = exec.Command("unzip", "-j", "-o", "-P", s.Password, file, "-d", s.Dir)
 	} else {
-		cmd = exec.Command("unzip", "-j", file, "-d", s.Dir)
+		cmd = exec.Command("unzip", "-j", "-o", file, "-d", s.Dir)
 	}
 
-	_, err := cmd.Output()
+	out, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return "", errors.New(string(execErr.Stderr))
@@ -70,5 +94,19 @@ func (s Zip) Unarchive(file string) (string, error) {
 		return "", err
 	}
 
-	return s.Dir + "file", nil
+	return s.extract(out)
+}
+
+func (s Zip) extract(out []byte) (string, error) {
+	find := "extracting: "
+	index := strings.Index(string(out), find)
+	if index == -1 {
+		return "", errors.New("Not found extracting.")
+	}
+	res := strings.TrimSpace(string(out[index + len(find):]))
+	return string(res), nil
+}
+
+func (s Zip) Ext() string {
+	return ".zip"
 }

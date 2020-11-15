@@ -25,7 +25,7 @@ func NewDbRead(db database.Interface) *DbRead {
 	return &DbRead{db}
 }
 
-func (dl *DbRead) Execute (request DbReadRequest) (DbReadResponse, error) {
+func (dl *DbRead) Execute(request DbReadRequest) (DbReadResponse, error) {
 	response := DbReadResponse{}
 
 	resp, err := dl.db.Tables(request.Name)

@@ -24,7 +24,7 @@ func NewBackupList(store storage.Interface) *BackupList {
 	return &BackupList{store}
 }
 
-func (dl *BackupList) Execute (request BackupListRequest) (BackupListResponse, error) {
+func (dl *BackupList) Execute(request BackupListRequest) (BackupListResponse, error) {
 	response := BackupListResponse{}
 
 	resp, err := dl.store.List()

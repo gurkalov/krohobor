@@ -20,9 +20,7 @@ func App(cfg config.Config) *cli.App {
 	zipArchive := archive.Zip{
 		Password: cfg.App.Password,
 	}
-	s3Storage := storage.AwsS3{
-		Bucket: cfg.App.Catalog,
-	}
+	s3Storage := storage.NewAwsS3(cfg.App.Catalog, zipArchive)
 
 	app.Flags = []cli.Flag {
 		&cli.StringFlag{
@@ -75,21 +73,21 @@ func App(cfg config.Config) *cli.App {
 					Name:  "dumpall",
 					Usage: "backup all databases",
 					Action: (actions.DbDumpAll{
-						UseCase: usecases.NewDbDumpAll(dbPostgres, zipArchive, s3Storage),
+						UseCase: usecases.NewDbDumpAll(dbPostgres, s3Storage),
 					}).Action(cfg),
 				},
 				{
 					Name:  "dump",
 					Usage: "backup database",
 					Action: (actions.DbDump{
-						UseCase: usecases.NewDbDump(dbPostgres, zipArchive, s3Storage),
+						UseCase: usecases.NewDbDump(dbPostgres, s3Storage),
 					}).Action(cfg),
 				},
 				{
 					Name:  "restore",
 					Usage: "restore backup",
 					Action: (actions.DbRestore{
-						UseCase: usecases.NewDbRestore(dbPostgres, zipArchive, s3Storage),
+						UseCase: usecases.NewDbRestore(dbPostgres, s3Storage),
 					}).Action(cfg),
 				},
 			},

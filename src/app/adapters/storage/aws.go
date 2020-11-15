@@ -8,19 +8,105 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/s3manager"
 	"io"
+	"io/ioutil"
 	"krohobor/app/adapters/archive"
 	"os"
+	"path/filepath"
 	"runtime/debug"
-	"time"
+	"strings"
 )
 
 type AwsS3 struct {
-	Bucket string
-	Archive archive.Interface
+	bucket  string
+	archive archive.Interface
+	client *s3.Client
+}
+
+func NewAwsS3(bucket string, arch archive.Interface) AwsS3 {
+	config, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return AwsS3{}
+	}
+
+	client := s3.New(config)
+
+	return AwsS3{bucket, arch, client}
+}
+
+func NewAwsS3Test(bucket string, arch archive.Interface) AwsS3 {
+	config, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return AwsS3{}
+	}
+
+	client := s3.New(config)
+
+	iter := s3manager.NewDeleteListIterator(client, &s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+	})
+	if err := s3manager.NewBatchDeleteWithClient(client).Delete(context.TODO(), iter); err != nil {
+		fmt.Println(err)
+	}
+
+	reqDelete := client.DeleteBucketRequest(&s3.DeleteBucketInput{
+		Bucket: aws.String(bucket),
+	})
+	_, err = reqDelete.Send(context.TODO())
+
+	reqCreate := client.CreateBucketRequest(&s3.CreateBucketInput{
+		Bucket: aws.String(bucket),
+	})
+	_, err = reqCreate.Send(context.TODO())
+
+	awsS3 := AwsS3{bucket, arch, client}
+
+	d1 := []byte("hello")
+	if err := ioutil.WriteFile("/tmp/file1", d1, 0644); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile("/tmp/file2", d1, 0644); err != nil {
+		panic(err)
+	}
+
+	_ = awsS3.Write("/tmp/file1")
+	_ = awsS3.Write("/tmp/file2")
+
+	return awsS3
+}
+
+func (s AwsS3) Check() error {
+	if s.archive != nil {
+		if err := s.archive.Check(); err != nil {
+			return err
+		}
+	}
+
+	config, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return err
+	}
+
+	svc := s3.New(config)
+	req := svc.GetBucketVersioningRequest(&s3.GetBucketVersioningInput{
+		Bucket: &s.bucket,
+	})
+
+	_, err = req.Send(context.TODO())
+
+	return err
+}
+
+func (s AwsS3) Filename(filename string) string {
+	return filename
 }
 
 func (s AwsS3) Read(filename string) (string, error) {
-	fileParam := "/tmp/download_backup.tmp"
+	if s.archive != nil {
+		filename = filename + s.archive.Ext()
+	}
+
+	fileParam := "/tmp/" + filepath.Base(filename)
+
 	file, err := os.Create(fileParam)
 	if err != nil {
 		return "", err
@@ -28,23 +114,18 @@ func (s AwsS3) Read(filename string) (string, error) {
 
 	defer file.Close()
 
-	config, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return "", err
-	}
-
-	downloader := s3manager.NewDownloader(config)
+	downloader := s3manager.NewDownloader(s.client.Config)
 	_, err = downloader.Download(file,
 		&s3.GetObjectInput{
-			Bucket: aws.String(s.Bucket),
+			Bucket: aws.String(s.bucket),
 			Key:    aws.String(filename),
 		})
 	if err != nil {
 		return "", err
 	}
 
-	if s.Archive != nil {
-		if file, err := s.Archive.Unarchive(fileParam); err == nil {
+	if s.archive != nil {
+		if file, err := s.archive.Unarchive(fileParam); err == nil {
 			return file, err
 		} else {
 			return "", err
@@ -55,26 +136,27 @@ func (s AwsS3) Read(filename string) (string, error) {
 }
 
 func (s AwsS3) Write(filename string) error {
-	config, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return err
+	if s.archive != nil {
+		archFile := filename + s.archive.Ext()
+		if err := s.archive.Archive(archFile, filename); err != nil {
+			return err
+		}
+		filename = archFile
 	}
 
-	uploader := s3manager.NewUploader(config)
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	readLogger := NewReadLogger(file, config.Logger)
+	readLogger := NewReadLogger(file, s.client.Config.Logger)
 
-	dt := time.Now()
-	nowDate := dt.Format("2006-01-02_15-04")
-	key := "backup_" + nowDate + ".zip"
+	key := filepath.Base(filename)
 
+	uploader := s3manager.NewUploader(s.client.Config)
 	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: &s.Bucket,
+		Bucket: &s.bucket,
 		Key:    &key,
 		Body:   readLogger,
 	}, func(u *s3manager.Uploader) {
@@ -87,34 +169,31 @@ func (s AwsS3) Write(filename string) error {
 }
 
 func (s AwsS3) Delete(filename string) error {
-	config, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return err
-	}
-
-	svc := s3.New(config)
-	svc.DeleteObjectRequest(&s3.DeleteObjectInput{
-		Bucket: &s.Bucket,
+	req := s.client.DeleteObjectRequest(&s3.DeleteObjectInput{
+		Bucket: &s.bucket,
 		Key:    aws.String(filename),
 	})
 
-	return nil
+	_, err := req.Send(context.TODO())
+
+	return err
 }
 
 func (s AwsS3) List() ([]string, error) {
-	config, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return []string{}, err
-	}
-
 	var result []string
-	svc := s3.New(config)
-	req := svc.ListObjectsRequest(&s3.ListObjectsInput{Bucket: &s.Bucket})
+
+	req := s.client.ListObjectsRequest(&s3.ListObjectsInput{Bucket: &s.bucket})
 	p := s3.NewListObjectsPaginator(req)
 	for p.Next(context.TODO()) {
 		page := p.CurrentPage()
 		for _, obj := range page.Contents {
-			result = append(result, *obj.Key)
+			if s.archive != nil && s.archive.Ext() != "" {
+				if s.archive.Ext() == filepath.Ext(*obj.Key) {
+					result = append(result, strings.TrimSuffix(*obj.Key, s.archive.Ext()))
+				}
+			} else {
+				result = append(result, *obj.Key)
+			}
 		}
 	}
 

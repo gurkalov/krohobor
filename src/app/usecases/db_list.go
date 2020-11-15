@@ -25,7 +25,7 @@ func NewDbList(db database.Interface) *DbList {
 	return &DbList{db}
 }
 
-func (dl *DbList) Execute (request DbListRequest) (DbListResponse, error) {
+func (dl *DbList) Execute(request DbListRequest) (DbListResponse, error) {
 	response := DbListResponse{}
 
 	resp, err := dl.db.List()

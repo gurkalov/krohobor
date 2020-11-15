@@ -16,9 +16,7 @@ func Router(cfg config.Config) *httprouter.Router {
 	zipArchive := archive.Zip{
 		Password: cfg.App.Password,
 	}
-	s3Storage := storage.AwsS3{
-		Bucket: cfg.App.Catalog,
-	}
+	s3Storage := storage.NewAwsS3(cfg.App.Catalog, zipArchive)
 
 	dbListHandler := handlers.DbList{
 		UseCase: usecases.NewDbList(dbPostgres),
@@ -27,19 +25,15 @@ func Router(cfg config.Config) *httprouter.Router {
 		UseCase: usecases.NewDbRead(dbPostgres),
 	}
 	dbDumpHandler := handlers.DbDump{
-		UseCase: usecases.NewDbDump(dbPostgres, zipArchive, s3Storage),
+		UseCase: usecases.NewDbDump(dbPostgres, s3Storage),
 	}
 
 	dbDumpAllHandler := handlers.DbDumpAll{
-		UseCase: usecases.NewDbDumpAll(dbPostgres, zipArchive, s3Storage),
+		UseCase: usecases.NewDbDumpAll(dbPostgres, s3Storage),
 	}
 
 	dbRestoreHandler := handlers.DbRestore{
-		UseCase: usecases.NewDbRestore(dbPostgres, zipArchive, s3Storage),
-	}
-
-	dbRestoreAllHandler := handlers.DbRestoreAll{
-		UseCase: usecases.NewDbRestoreAll(dbPostgres, zipArchive, s3Storage),
+		UseCase: usecases.NewDbRestore(dbPostgres, s3Storage),
 	}
 
 	router := httprouter.New()
@@ -51,8 +45,8 @@ func Router(cfg config.Config) *httprouter.Router {
 	router.POST("/v1/db/:db/restore", dbRestoreHandler.Handle())
 	router.POST("/v1/db/:db/restore/:name", dbRestoreHandler.Handle())
 
-	router.POST("/v1/restore", dbRestoreAllHandler.Handle())
-	router.POST("/v1/restore/:name", dbRestoreAllHandler.Handle())
+	router.POST("/v1/restore", dbRestoreHandler.Handle())
+	router.POST("/v1/restore/:name", dbRestoreHandler.Handle())
 
 	return router
 }
