@@ -98,10 +98,16 @@ func (s Zip) Unarchive(file string) (string, error) {
 }
 
 func (s Zip) extract(out []byte) (string, error) {
-	find := "extracting: "
-	index := strings.Index(string(out), find)
+	findExt := "extracting: "
+	find := findExt
+	index := strings.Index(string(out), findExt)
 	if index == -1 {
-		return "", errors.New("Not found extracting.")
+		findInf := "inflating: "
+		index = strings.Index(string(out), findInf)
+		if index == -1 {
+			return "", errors.New("Not found inflating or extracting.")
+		}
+		find = findInf
 	}
 	res := strings.TrimSpace(string(out[index + len(find):]))
 	return string(res), nil

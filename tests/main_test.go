@@ -58,7 +58,7 @@ func TestBackupListSuccess(t *testing.T) {
 
 func TestRestoreSuccess(t *testing.T) {
 	convey.Convey("Restore all", t, func() {
-		_, err := command.Run("--name=backup_2020-11-01_16-04.zip", "db", "restore")
+		_, err := command.Run("--name=test1.sql", "db", "restore")
 		//convey.So(out, convey.ShouldEqual, "{[{test1 8204847} {test2 8204847} {test3 8204847}]}")
 		convey.So(err, convey.ShouldBeNil)
 	})

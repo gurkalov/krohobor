@@ -13,11 +13,11 @@ type DbRestore struct {
 
 func (h DbRestore) Handle() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		filename := "/tmp/backup/" + ps.ByName("db") + ".sql"
+		//filename := "/tmp/backup/" + ps.ByName("db") + ".sql"
 
 		request := usecases.DbRestoreRequest{
 			Name: ps.ByName("db"),
-			Filename: filename,
+			//Filename: filename,
 		}
 
 		resp, err := h.UseCase.Execute(request)

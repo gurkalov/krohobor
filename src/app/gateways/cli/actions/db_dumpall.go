@@ -14,13 +14,9 @@ type DbDumpAll struct {
 func (d DbDumpAll) Action(cfg config.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		filename := "/tmp/backup/all.sql"
-		dirname := "/tmp/backup"
-		archname := "/tmp/backup_all.zip"
 
 		request := usecases.DbDumpAllRequest{
 			Filename: filename,
-			Dirname: dirname,
-			Archname: archname,
 		}
 
 		resp, err := d.UseCase.Execute(request)

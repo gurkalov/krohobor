@@ -13,15 +13,9 @@ type DbRestore struct {
 
 func (d DbRestore) Action(cfg config.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		filename := "/tmp/download_backup/all.sql"
-		dirname := "/tmp/download_backup"
-		archname := "/tmp/download_backup.zip"
-
 		request := usecases.DbRestoreRequest{
-			Filename: filename,
 			Name: c.String("name"),
-			Archfile : archname,
-			Archdir: dirname,
+			Filename: c.String("name"),
 		}
 
 		resp, err := d.UseCase.Execute(request)

@@ -68,7 +68,7 @@ func (p Postgres) CreateDb(dbname string) error {
 
 func (p Postgres) Dump(dbname, filename string) error {
 	cmd := exec.Command("pg_dump", "-h", p.cfg.Host, "-U", p.cfg.User,
-		"-Fc", dbname, "-f", filename)
+		dbname, "-f", filename)
 	_, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
@@ -104,10 +104,10 @@ func (p Postgres) Restore(filename string) error {
 		"PGPASSWORD=" + p.cfg.Password,
 	)
 
-	_, err = cmd.Output()
+	out, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
-			return errors.New(string(execErr.Stderr))
+			return errors.New(string(execErr.Stderr) + ":" + string(out))
 		}
 		return err
 	}

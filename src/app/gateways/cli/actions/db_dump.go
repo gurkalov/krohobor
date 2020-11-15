@@ -16,14 +16,10 @@ func (d DbDump) Action(cfg config.Config) cli.ActionFunc {
 		name := c.String("db")
 
 		filename := fmt.Sprintf("/tmp/backup/%s.sql", name)
-		dirname := "/tmp/backup"
-		archname := fmt.Sprintf("/tmp/backup_%s.zip", name)
 
 		request := usecases.DbDumpRequest{
 			Name: name,
 			Filename: filename,
-			Dirname: dirname,
-			Archname: archname,
 		}
 
 		resp, err := d.UseCase.Execute(request)
