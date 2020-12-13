@@ -22,9 +22,13 @@ func NewPostgres(cfg config.PostgresConfig) Postgres {
 func (p Postgres) List() ([]domain.Database, error) {
 	var list []domain.Database
 
-	cmd := exec.Command("psql", "-h", p.cfg.Host, "-U", p.cfg.User,
+	cmd := exec.Command("psql", "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port,
 		"-t", "-A", `-F","`,
 		"-c", "SELECT datname, pg_database_size(datname) FROM pg_database WHERE datname NOT IN ('postgres', 'template0', 'template1', 'template2');")
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + p.cfg.Password,
+	)
+
 	stdout, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
@@ -54,7 +58,10 @@ func (p Postgres) List() ([]domain.Database, error) {
 }
 
 func (p Postgres) CreateDb(dbname string) error {
-	cmd := exec.Command("createdb", dbname)
+	cmd := exec.Command("createdb", dbname, "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port)
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + p.cfg.Password,
+	)
 	_, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
@@ -67,8 +74,11 @@ func (p Postgres) CreateDb(dbname string) error {
 }
 
 func (p Postgres) Dump(dbname, filename string) error {
-	cmd := exec.Command("pg_dump", "-h", p.cfg.Host, "-U", p.cfg.User,
+	cmd := exec.Command("pg_dump", "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port,
 		dbname, "-f", filename)
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + p.cfg.Password,
+	)
 	_, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
@@ -81,7 +91,10 @@ func (p Postgres) Dump(dbname, filename string) error {
 }
 
 func (p Postgres) DumpAll(filename string) error {
-	cmd := exec.Command("pg_dumpall", "-h", p.cfg.Host, "-U", p.cfg.User, "-f", filename)
+	cmd := exec.Command("pg_dumpall", "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port, "-f", filename)
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + p.cfg.Password,
+	)
 	_, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
@@ -93,13 +106,18 @@ func (p Postgres) DumpAll(filename string) error {
 	return nil
 }
 
-func (p Postgres) Restore(filename string) error {
+func (p Postgres) Restore(filename, target string) error {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return err
 	}
 
-	cmd := exec.Command("psql",	"-f", filename, p.cfg.DB, "-h", p.cfg.Host, "-p", p.cfg.Port, "-U", p.cfg.User)
+	partTarget := strings.Split(target, ":")
+	if len(partTarget) < 2 {
+		return errors.New("Wrong target:" + target)
+	}
+
+	cmd := exec.Command("psql",	"-f", filename, p.cfg.DB, "-h", partTarget[0], "-p", partTarget[1], "-U", p.cfg.User)
 	cmd.Env = append(os.Environ(),
 		"PGPASSWORD=" + p.cfg.Password,
 	)
@@ -116,7 +134,10 @@ func (p Postgres) Restore(filename string) error {
 }
 
 func (p Postgres) Drop(dbname string) error {
-	cmd := exec.Command("dropdb", dbname, "-h", p.cfg.Host, "-U", p.cfg.User)
+	cmd := exec.Command("dropdb", dbname, "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port)
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + p.cfg.Password,
+	)
 	_, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
@@ -131,9 +152,13 @@ func (p Postgres) Drop(dbname string) error {
 func (p Postgres) Tables(dbname string) ([]domain.Table, error) {
 	var list []domain.Table
 
-	cmd := exec.Command("psql", dbname, "-h", p.cfg.Host, "-U", p.cfg.User,
+	cmd := exec.Command("psql", dbname, "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port,
 		"-t", "-A", `-F","`,
 		"-c", "SELECT t.table_name, pg_total_relation_size(t.table_name::text), s.n_live_tup FROM information_schema.tables t JOIN pg_stat_user_tables s ON t.table_name = s.relname WHERE table_schema='public';")
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + p.cfg.Password,
+	)
+
 	stdout, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {

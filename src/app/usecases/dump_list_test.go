@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestNewBackupList(t *testing.T) {
+func TestNewDumpList(t *testing.T) {
 	store := storage.NewFileMock("/tmp/krohobor/storage", nil)
 
 	type args struct {
@@ -16,28 +16,28 @@ func TestNewBackupList(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *BackupList
+		want *DumpList
 	}{
 		{
 			name: "Test",
 			args: args{
 				store: store,
 			},
-			want: &BackupList{
+			want: &DumpList{
 				store: store,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewBackupList(tt.args.store); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewBackupList() = %v, want %v", got, tt.want)
+			if got := NewDumpList(tt.args.store); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewDumpList() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestBackupList_Execute(t *testing.T) {
+func TestDumpList_Execute(t *testing.T) {
 	dir := "/tmp/krohobor/storage"
 
 	store := storage.NewFileMock(dir, nil)
@@ -49,13 +49,13 @@ func TestBackupList_Execute(t *testing.T) {
 		store storage.Interface
 	}
 	type args struct {
-		request BackupListRequest
+		request DumpListRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    BackupListResponse
+		want    DumpListResponse
 		wantErr bool
 	}{
 		{
@@ -64,9 +64,9 @@ func TestBackupList_Execute(t *testing.T) {
 				store: storeWithArch,
 			},
 			args: args{
-				request: BackupListRequest{},
+				request: DumpListRequest{},
 			},
-			want: BackupListResponse{
+			want: DumpListResponse{
 				List: []string{
 					"file1.txt",
 					"file2.txt",
@@ -79,9 +79,9 @@ func TestBackupList_Execute(t *testing.T) {
 				store: store,
 			},
 			args: args{
-				request: BackupListRequest{},
+				request: DumpListRequest{},
 			},
-			want: BackupListResponse{
+			want: DumpListResponse{
 				List: []string{
 					"file1.txt",
 					"file1.txt.zip",
@@ -93,16 +93,16 @@ func TestBackupList_Execute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dl := &BackupList{
+			dl := &DumpList{
 				store: tt.fields.store,
 			}
 			got, err := dl.Execute(tt.args.request)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BackupList.Execute() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DumpList.Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BackupList.Execute() = %v, want %v", got, tt.want)
+				t.Errorf("DumpList.Execute() = %v, want %v", got, tt.want)
 			}
 		})
 	}

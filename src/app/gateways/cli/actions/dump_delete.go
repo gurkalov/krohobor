@@ -7,19 +7,14 @@ import (
 	"krohobor/app/usecases"
 )
 
-type DbDump struct {
-	UseCase usecases.DbDumpInterface
+type DumpDelete struct {
+	UseCase usecases.DumpDeleteInterface
 }
 
-func (d DbDump) Action(cfg config.Config) cli.ActionFunc {
+func (d DumpDelete) Action(cfg config.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		name := c.String("db")
-
-		filename := fmt.Sprintf("/tmp/backup/%s.sql", name)
-
-		request := usecases.DbDumpRequest{
-			Name: name,
-			Filename: filename,
+		request := usecases.DumpDeleteRequest{
+			Name: c.String("name"),
 		}
 
 		resp, err := d.UseCase.Execute(request)

@@ -7,16 +7,13 @@ import (
 	"krohobor/app/usecases"
 )
 
-type DbRestore struct {
-	UseCase usecases.DbRestoreInterface
+type DumpList struct {
+	UseCase usecases.DumpListInterface
 }
 
-func (d DbRestore) Action(cfg config.Config) cli.ActionFunc {
+func (d DumpList) Action(cfg config.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		request := usecases.DbRestoreRequest{
-			Name: c.String("name"),
-			Filename: c.String("name"),
-		}
+		request := usecases.DumpListRequest{}
 
 		resp, err := d.UseCase.Execute(request)
 		if err != nil {

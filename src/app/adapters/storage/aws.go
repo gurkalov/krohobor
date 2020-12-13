@@ -169,6 +169,10 @@ func (s AwsS3) Write(filename string) error {
 }
 
 func (s AwsS3) Delete(filename string) error {
+	if s.archive != nil {
+		filename = filename + s.archive.Ext()
+	}
+
 	req := s.client.DeleteObjectRequest(&s3.DeleteObjectInput{
 		Bucket: &s.bucket,
 		Key:    aws.String(filename),

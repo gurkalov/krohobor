@@ -13,4 +13,38 @@ Show grants for table in database
 \dp
 ```
 
+List of databases
+```env
+./krohobor db list
+```
 
+Info of database
+```env
+./krohobor --db=position db read
+```
+
+
+Create dump of all databases
+```env
+./krohobor dump create
+```
+
+Create dump of concrete databases
+```env
+./krohobor --db=position dump create
+```
+
+List of dumps
+```env
+./krohobor dump list
+```
+
+Delete dump
+```env
+./krohobor --name=all.sql dump delete
+```
+
+Restore dump
+```env
+./krohobor --name=all.sql --target=localhost:5431 dump restore
+```

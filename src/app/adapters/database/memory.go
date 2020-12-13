@@ -65,7 +65,7 @@ func (m Memory) DumpAll(filename string) error {
 	return nil
 }
 
-func (m Memory) Restore(filename string) error {
+func (m Memory) Restore(filename, target string) error {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return err

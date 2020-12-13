@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestNewDbDump(t *testing.T) {
+func TestNewDumpCreate(t *testing.T) {
 	db := database.NewMemory()
     store := storage.NewFileMock("/tmp/krohobor/storage", nil)
 
@@ -19,7 +19,7 @@ func TestNewDbDump(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *DbDump
+		want *DumpCreate
 	}{
 		 {
 		 	 name: "Test",
@@ -27,7 +27,7 @@ func TestNewDbDump(t *testing.T) {
 		 	 	 db: db,
 		 	 	 store: store,
 			 },
-			 want: &DbDump{
+			 want: &DumpCreate{
 				 db: db,
 				 store: store,
 			 },
@@ -35,14 +35,14 @@ func TestNewDbDump(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewDbDump(tt.args.db, tt.args.store); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewDbDump() = %v, want %v", got, tt.want)
+			if got := NewDumpCreate(tt.args.db, tt.args.store); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewDumpCreate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDbDump_Execute(t *testing.T) {
+func TestDumpCreate_Execute(t *testing.T) {
 	dir := "/tmp/krohobor/storage"
 
 	db := database.NewMemory()
@@ -56,57 +56,85 @@ func TestDbDump_Execute(t *testing.T) {
 		store storage.Interface
 	}
 	type args struct {
-		request DbDumpRequest
+		request DumpCreateRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    DbDumpResponse
+		want    DumpCreateResponse
 		wantErr bool
 	}{
 		{
-			name: "Test without arch - successful",
+			name: "Create dump for one database without arch - successful",
 			fields: fields{
 				db: db,
 				store: store,
 		    },
 			args: args{
-				request: DbDumpRequest{
-					Name: "test1",
+				request: DumpCreateRequest{
+					DbNames: []string{"test1"},
 					Filename: "test",
 				},
 			},
-			want: DbDumpResponse{},
+			want: DumpCreateResponse{},
 		},
 		{
-			name: "Test with arch - successful",
+			name: "Create dump for one database with arch - successful",
 			fields: fields{
 				db: db,
 				store: storeWithArch,
 			},
 			args: args{
-				request: DbDumpRequest{
-					Name: "test1",
+				request: DumpCreateRequest{
+					DbNames: []string{"test1"},
 					Filename: "test",
 				},
 			},
-			want: DbDumpResponse{},
+			want: DumpCreateResponse{},
+		},
+		{
+			name: "Create dump for all databases without arch - successful",
+			fields: fields{
+				db: db,
+				store: store,
+			},
+			args: args{
+				request: DumpCreateRequest{
+					DbNames: []string{},
+					Filename: "test-all",
+				},
+			},
+			want: DumpCreateResponse{},
+		},
+		{
+			name: "Create dump for all databases with arch - successful",
+			fields: fields{
+				db: db,
+				store: storeWithArch,
+			},
+			args: args{
+				request: DumpCreateRequest{
+					DbNames: []string{},
+					Filename: "test-all",
+				},
+			},
+			want: DumpCreateResponse{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dd := &DbDump{
+			dd := &DumpCreate{
 				db:    tt.fields.db,
 				store: tt.fields.store,
 			}
 			got, err := dd.Execute(tt.args.request)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DbDump.Execute() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DumpCreate.Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DbDump.Execute() = %v, want %v", got, tt.want)
+				t.Errorf("DumpCreate.Execute() = %v, want %v", got, tt.want)
 			}
 		})
 	}

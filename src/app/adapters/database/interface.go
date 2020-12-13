@@ -12,6 +12,6 @@ type Interface interface {
 	Dump(string, string) error
 	DumpAll(string) error
 	Drop(string) error
-	Restore(string) error
+	Restore(string, string) error
 	//Info(string) (map[string]int, error)
 }

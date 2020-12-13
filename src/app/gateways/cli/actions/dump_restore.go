@@ -7,16 +7,16 @@ import (
 	"krohobor/app/usecases"
 )
 
-type DbDumpAll struct {
-	UseCase usecases.DbDumpAllInterface
+type DumpRestore struct {
+	UseCase usecases.DumpRestoreInterface
 }
 
-func (d DbDumpAll) Action(cfg config.Config) cli.ActionFunc {
+func (d DumpRestore) Action(cfg config.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		filename := "/tmp/backup/all.sql"
-
-		request := usecases.DbDumpAllRequest{
-			Filename: filename,
+		request := usecases.DumpRestoreRequest{
+			Name: c.String("name"),
+			Filename: c.String("name"),
+			Target: c.String("target"),
 		}
 
 		resp, err := d.UseCase.Execute(request)

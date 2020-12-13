@@ -25,13 +25,18 @@ func App(cfg config.Config) *cli.App {
 	app.Flags = []cli.Flag {
 		&cli.StringFlag{
 			Name: "db",
-			Value: "app",
+			Value: "",
 			Usage: "database",
 		},
 		&cli.StringFlag{
 			Name: "name",
 			Value: "",
 			Usage: "Backup name",
+		},
+		&cli.StringFlag{
+			Name: "target",
+			Value: "",
+			Usage: "Target host",
 		},
 		&cli.IntFlag{
 			Name: "port",
@@ -69,39 +74,39 @@ func App(cfg config.Config) *cli.App {
 						UseCase: usecases.NewDbRead(dbPostgres),
 					}).Action(cfg),
 				},
+			},
+		},
+		{
+			Name:        "dump",
+			Aliases:     []string{},
+			Usage:       "Work with dumps",
+			Subcommands: []*cli.Command{
 				{
-					Name:  "dumpall",
-					Usage: "backup all databases",
-					Action: (actions.DbDumpAll{
-						UseCase: usecases.NewDbDumpAll(dbPostgres, s3Storage),
+					Name:  "create",
+					Usage: "create dump",
+					Action: (actions.DumpCreate{
+						UseCase: usecases.NewDumpCreate(dbPostgres, s3Storage),
 					}).Action(cfg),
 				},
 				{
-					Name:  "dump",
-					Usage: "backup database",
-					Action: (actions.DbDump{
-						UseCase: usecases.NewDbDump(dbPostgres, s3Storage),
+					Name:  "list",
+					Usage: "list of dumps",
+					Action: (actions.DumpList{
+						UseCase: usecases.NewDumpList(s3Storage),
 					}).Action(cfg),
 				},
 				{
 					Name:  "restore",
-					Usage: "restore backup",
-					Action: (actions.DbRestore{
-						UseCase: usecases.NewDbRestore(dbPostgres, s3Storage),
+					Usage: "restore dump",
+					Action: (actions.DumpRestore{
+						UseCase: usecases.NewDumpRestore(dbPostgres, s3Storage),
 					}).Action(cfg),
 				},
-			},
-		},
-		{
-			Name:        "backup",
-			Aliases:     []string{"backup"},
-			Usage:       "options for task templates",
-			Subcommands: []*cli.Command{
 				{
-					Name:  "list",
-					Usage: "list of backups",
-					Action: (actions.BackupList{
-						UseCase: usecases.NewBackupList(s3Storage),
+					Name:  "delete",
+					Usage: "delete backup",
+					Action: (actions.DumpDelete{
+						UseCase: usecases.NewDumpDelete(s3Storage),
 					}).Action(cfg),
 				},
 			},

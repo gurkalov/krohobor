@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestNewDbRestore(t *testing.T) {
+func TestNewDumpRestore(t *testing.T) {
 	db := database.NewMemory()
 	store := storage.NewFileMock("/tmp/krohobor/storage", nil)
 
@@ -19,7 +19,7 @@ func TestNewDbRestore(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *DbRestore
+		want *DumpRestore
 	}{
 		{
 			name: "Test",
@@ -27,7 +27,7 @@ func TestNewDbRestore(t *testing.T) {
 				db: db,
 				store: store,
 			},
-			want: &DbRestore{
+			want: &DumpRestore{
 				db: db,
 				store: store,
 			},
@@ -35,14 +35,14 @@ func TestNewDbRestore(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewDbRestore(tt.args.db, tt.args.store); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewDbRestore() = %v, want %v", got, tt.want)
+			if got := NewDumpRestore(tt.args.db, tt.args.store); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewDumpRestore() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDbRestore_Execute(t *testing.T) {
+func TestDumpRestore_Execute(t *testing.T) {
 	dir := "/tmp/krohobor/storage"
 
 	db := database.NewMemory()
@@ -56,13 +56,13 @@ func TestDbRestore_Execute(t *testing.T) {
 		store storage.Interface
 	}
 	type args struct {
-		request DbRestoreRequest
+		request DumpRestoreRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    DbRestoreResponse
+		want    DumpRestoreResponse
 		wantErr bool
 	}{
 		{
@@ -72,12 +72,12 @@ func TestDbRestore_Execute(t *testing.T) {
 				store: store,
 			},
 			args: args{
-				request: DbRestoreRequest{
+				request: DumpRestoreRequest{
 					Name: "test1",
 					Filename: "file1.txt",
 				},
 			},
-			want: DbRestoreResponse{},
+			want: DumpRestoreResponse{},
 		},
 		{
 			name: "Test with arch - successful",
@@ -86,27 +86,27 @@ func TestDbRestore_Execute(t *testing.T) {
 				store: storeWithArch,
 			},
 			args: args{
-				request: DbRestoreRequest{
+				request: DumpRestoreRequest{
 					Name: "test1",
 					Filename: "file1.txt",
 				},
 			},
-			want: DbRestoreResponse{},
+			want: DumpRestoreResponse{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dl := &DbRestore{
+			dl := &DumpRestore{
 				db:    tt.fields.db,
 				store: tt.fields.store,
 			}
 			got, err := dl.Execute(tt.args.request)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DbRestore.Execute() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DumpRestore.Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DbRestore.Execute() = %v, want %v", got, tt.want)
+				t.Errorf("DumpRestore.Execute() = %v, want %v", got, tt.want)
 			}
 		})
 	}

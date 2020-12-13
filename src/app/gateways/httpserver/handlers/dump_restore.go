@@ -7,15 +7,15 @@ import (
 	"net/http"
 )
 
-type DbRestore struct {
-	UseCase usecases.DbRestoreInterface
+type DumpRestore struct {
+	UseCase usecases.DumpRestoreInterface
 }
 
-func (h DbRestore) Handle() httprouter.Handle {
+func (h DumpRestore) Handle() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		//filename := "/tmp/backup/" + ps.ByName("db") + ".sql"
 
-		request := usecases.DbRestoreRequest{
+		request := usecases.DumpRestoreRequest{
 			Name: ps.ByName("db"),
 			//Filename: filename,
 		}
