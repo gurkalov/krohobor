@@ -1,10 +1,7 @@
 package config
 
 import (
-	"flag"
 	"github.com/BurntSushi/toml"
-	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 )
@@ -28,11 +25,10 @@ type PostgresConfig struct {
 	Password string
 }
 
-func Load() Config {
+func Load(filename string) Config {
 	cfg := Config{}
 
-	configFile := flag.String("config", ".env", "a string")
-	if _, err := toml.DecodeFile(*configFile, &cfg); err != nil {
+	if _, err := toml.DecodeFile(filename, &cfg); err != nil {
 		port, _ := strconv.Atoi(os.Getenv("APP_PORT"))
 		cfg.App.Port = port
 		cfg.App.Password = os.Getenv("APP_PASSWORD")
@@ -45,15 +41,11 @@ func Load() Config {
 		cfg.Postgres.Password = os.Getenv("PGPASSWORD")
 	}
 
-	pg := cfg.Postgres
-	pgpass := []byte(pg.Host +
-		":" + pg.Port +
-		":" + pg.DB +
-		":" + pg.User +
-		":" + pg.Password)
-	if err := ioutil.WriteFile(".pgpass", pgpass, 0600); err != nil {
-		log.Fatalln(err)
-	}
+	return cfg
+}
+
+func LoadMock() Config {
+	cfg := Config{}
 
 	return cfg
 }

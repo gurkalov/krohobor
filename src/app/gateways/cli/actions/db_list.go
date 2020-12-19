@@ -13,7 +13,9 @@ type DbList struct {
 
 func (d DbList) Action(cfg config.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		request := usecases.DbListRequest{}
+		request := usecases.DbListRequest{
+			Target: c.String("target"),
+		}
 
 		resp, err := d.UseCase.Execute(request)
 		if err != nil {

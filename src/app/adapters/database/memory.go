@@ -29,7 +29,7 @@ func NewMemory() Memory {
 	return Memory{list}
 }
 
-func (m Memory) List() ([]domain.Database, error) {
+func (m Memory) List(target string) ([]domain.Database, error) {
 	return m.list, nil
 }
 
@@ -74,7 +74,7 @@ func (m Memory) Restore(filename, target string) error {
 	return nil
 }
 
-func (m Memory) Drop(dbname string) error {
+func (m Memory) Drop(dbname, target string) error {
 	var newList []domain.Database
 	for _, v := range m.list {
 		if v.Name != dbname {
@@ -86,7 +86,7 @@ func (m Memory) Drop(dbname string) error {
 	return nil
 }
 
-func (m Memory) Tables(dbname string) ([]domain.Table, error) {
+func (m Memory) Tables(dbname, target string) ([]domain.Table, error) {
 	list := []domain.Table{
 		{
 			Name: "table1",

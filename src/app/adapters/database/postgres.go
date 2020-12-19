@@ -19,23 +19,25 @@ func NewPostgres(cfg config.PostgresConfig) Postgres {
 	return Postgres{cfg}
 }
 
-func (p Postgres) List() ([]domain.Database, error) {
+func (p Postgres) List(target string) ([]domain.Database, error) {
 	var list []domain.Database
+	cfg, err := p.targetConfig(target)
+	if err != nil {
+		return list, errors.New("Wrong target:" + target)
+	}
 
-	cmd := exec.Command("psql", "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port,
-		"-t", "-A", `-F","`,
+	stdout, err := p.cmd(cfg, "psql", "-t", "-A", `-F","`,
 		"-c", "SELECT datname, pg_database_size(datname) FROM pg_database WHERE datname NOT IN ('postgres', 'template0', 'template1', 'template2');")
-	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + p.cfg.Password,
-	)
-
-	stdout, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return list, errors.New(string(execErr.Stderr))
 		}
 
 		return list, err
+	}
+
+	if len(stdout) == 0 {
+		return list, nil
 	}
 
 	dbs := strings.Split(strings.Trim(string(stdout), "\n"), "\n")
@@ -58,11 +60,7 @@ func (p Postgres) List() ([]domain.Database, error) {
 }
 
 func (p Postgres) CreateDb(dbname string) error {
-	cmd := exec.Command("createdb", dbname, "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port)
-	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + p.cfg.Password,
-	)
-	_, err := cmd.Output()
+	_, err := p.cmd(p.cfg, "createdb", dbname)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr))
@@ -74,12 +72,7 @@ func (p Postgres) CreateDb(dbname string) error {
 }
 
 func (p Postgres) Dump(dbname, filename string) error {
-	cmd := exec.Command("pg_dump", "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port,
-		dbname, "-f", filename)
-	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + p.cfg.Password,
-	)
-	_, err := cmd.Output()
+	_, err := p.cmd(p.cfg, "pg_dump", dbname, "-f", filename)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr))
@@ -91,11 +84,7 @@ func (p Postgres) Dump(dbname, filename string) error {
 }
 
 func (p Postgres) DumpAll(filename string) error {
-	cmd := exec.Command("pg_dumpall", "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port, "-f", filename)
-	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + p.cfg.Password,
-	)
-	_, err := cmd.Output()
+	_, err := p.cmd(p.cfg, "pg_dumpall","-f", filename)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr))
@@ -112,17 +101,12 @@ func (p Postgres) Restore(filename, target string) error {
 		return err
 	}
 
-	partTarget := strings.Split(target, ":")
-	if len(partTarget) < 2 {
+	cfg, err := p.targetConfig(target)
+	if err != nil {
 		return errors.New("Wrong target:" + target)
 	}
 
-	cmd := exec.Command("psql",	"-f", filename, p.cfg.DB, "-h", partTarget[0], "-p", partTarget[1], "-U", p.cfg.User)
-	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + p.cfg.Password,
-	)
-
-	out, err := cmd.Output()
+	out, err := p.cmd(cfg, "psql", "-f", filename)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr) + ":" + string(out))
@@ -133,12 +117,13 @@ func (p Postgres) Restore(filename, target string) error {
 	return nil
 }
 
-func (p Postgres) Drop(dbname string) error {
-	cmd := exec.Command("dropdb", dbname, "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port)
-	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + p.cfg.Password,
-	)
-	_, err := cmd.Output()
+func (p Postgres) Drop(dbname, target string) error {
+	cfg, err := p.targetConfig(target)
+	if err != nil {
+		return errors.New("Wrong target:" + target)
+	}
+
+	_, err = p.cmd(cfg, "dropdb", dbname)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr))
@@ -149,23 +134,25 @@ func (p Postgres) Drop(dbname string) error {
 	return nil
 }
 
-func (p Postgres) Tables(dbname string) ([]domain.Table, error) {
+func (p Postgres) Tables(dbname, target string) ([]domain.Table, error) {
 	var list []domain.Table
 
-	cmd := exec.Command("psql", dbname, "-h", p.cfg.Host, "-U", p.cfg.User, "-p", p.cfg.Port,
-		"-t", "-A", `-F","`,
+	cfg, err := p.targetConfig(target)
+	if err != nil {
+		return list, errors.New("Wrong target:" + target)
+	}
+	stdout, err := p.cmd(cfg, "psql", dbname, "-t", "-A", `-F","`,
 		"-c", "SELECT t.table_name, pg_total_relation_size(t.table_name::text), s.n_live_tup FROM information_schema.tables t JOIN pg_stat_user_tables s ON t.table_name = s.relname WHERE table_schema='public';")
-	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + p.cfg.Password,
-	)
-
-	stdout, err := cmd.Output()
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return list, errors.New(string(execErr.Stderr))
 		}
 
 		return list, err
+	}
+
+	if len(stdout) == 0 {
+		return list, nil
 	}
 
 	dbs := strings.Split(strings.Trim(string(stdout), "\n"), "\n")
@@ -193,10 +180,8 @@ func (p Postgres) Tables(dbname string) ([]domain.Table, error) {
 }
 
 func (p Postgres) Count(dbname, table string) (int, error) {
-	cmd := exec.Command("psql", dbname,
-		"-t", "-A",
+	stdout, err := p.cmd(p.cfg, "psql", "-t", "-A",
 		"-c", fmt.Sprintf("SELECT count(*) FROM %s;", table))
-	stdout, err := cmd.Output()
 	if err != nil {
 		return 0, err
 	}
@@ -207,6 +192,34 @@ func (p Postgres) Count(dbname, table string) (int, error) {
 	}
 
 	return count, nil
+}
+
+func (p Postgres) cmd(cfg config.PostgresConfig, name string, arg ...string) ([]byte, error) {
+	arg = append(arg, "-h", cfg.Host, "-U", cfg.User, "-p", cfg.Port)
+
+	cmd := exec.Command(name, arg...)
+	cmd.Env = append(os.Environ(),
+		"PGPASSWORD=" + cfg.Password,
+	)
+
+	return cmd.Output()
+}
+
+func (p Postgres) targetConfig(target string) (config.PostgresConfig, error) {
+	cfg := p.cfg
+	if target == "" {
+		return cfg, nil
+	}
+
+	partTarget := strings.Split(target, ":")
+	if len(partTarget) > 0 {
+		cfg.Host = partTarget[0]
+	}
+	if len(partTarget) > 1 {
+		cfg.Port = partTarget[1]
+	}
+
+	return cfg, nil
 }
 
 //func (p Postgres) Info(dbname string) (map[string]int, error) {

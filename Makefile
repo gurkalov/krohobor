@@ -34,3 +34,6 @@ install:
 new:
 	make build
 	make up
+
+krohobor:
+	cd src && go build -o krohobor cmd/main.go

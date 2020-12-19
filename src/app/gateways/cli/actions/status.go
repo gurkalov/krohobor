@@ -7,14 +7,13 @@ import (
 	"krohobor/app/usecases"
 )
 
-type DbRead struct {
-	UseCase usecases.DbReadInterface
+type Status struct {
+	UseCase usecases.StatusInterface
 }
 
-func (d DbRead) Action(cfg config.Config) cli.ActionFunc {
+func (d Status) Action(cfg config.Config) cli.ActionFunc {
 	return func(c *cli.Context) error {
-		request := usecases.DbReadRequest{
-			Name: c.String("db"),
+		request := usecases.StatusRequest{
 			Target: c.String("target"),
 		}
 

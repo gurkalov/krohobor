@@ -22,7 +22,7 @@ func App(cfg config.Config) *cli.App {
 	}
 	s3Storage := storage.NewAwsS3(cfg.App.Catalog, zipArchive)
 
-	app.Flags = []cli.Flag {
+	app.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name: "db",
 			Value: "",
@@ -46,6 +46,14 @@ func App(cfg config.Config) *cli.App {
 	}
 
 	app.Commands = []*cli.Command{
+		{
+			Name:    "status",
+			Aliases: []string{},
+			Usage:   "Status info",
+			Action: (actions.Status{
+				UseCase: usecases.NewStatus(cfg, dbPostgres, s3Storage),
+			}).Action(cfg),
+		},
 		{
 			Name:    "httpserver",
 			Aliases: []string{"serve"},

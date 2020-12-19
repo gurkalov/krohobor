@@ -16,11 +16,14 @@ Show grants for table in database
 List of databases
 ```env
 ./krohobor db list
+./krohobor --target=localhost:5430 db list
+./krohobor --target=localhost:5431 db list
 ```
 
 Info of database
 ```env
-./krohobor --db=position db read
+./krohobor --db=test1 db read
+./krohobor --target=localhost:5430 --db=test1 db read
 ```
 
 
