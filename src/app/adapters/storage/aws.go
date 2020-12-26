@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"krohobor/app/adapters/archive"
+	"krohobor/app/adapters/config"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -22,24 +23,28 @@ type AwsS3 struct {
 	client *s3.Client
 }
 
-func NewAwsS3(bucket string, arch archive.Interface) AwsS3 {
-	config, err := external.LoadDefaultAWSConfig()
+func NewAwsS3(cfg config.AwsS3Config, arch archive.Interface) AwsS3 {
+	conf, err := external.LoadDefaultAWSConfig(
+		external.WithRegion(cfg.Region),
+		external.WithCredentialsValue(aws.Credentials{
+			AccessKeyID: cfg.KeyId,
+			SecretAccessKey: cfg.AccessKey,
+		}),
+	)
 	if err != nil {
 		return AwsS3{}
 	}
 
-	client := s3.New(config)
-
-	return AwsS3{bucket, arch, client}
+	return AwsS3{cfg.Catalog, arch, s3.New(conf)}
 }
 
 func NewAwsS3Test(bucket string, arch archive.Interface) AwsS3 {
-	config, err := external.LoadDefaultAWSConfig()
+	conf, err := external.LoadDefaultAWSConfig()
 	if err != nil {
 		return AwsS3{}
 	}
 
-	client := s3.New(config)
+	client := s3.New(conf)
 
 	iter := s3manager.NewDeleteListIterator(client, &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
@@ -81,12 +86,12 @@ func (s AwsS3) Check() error {
 		}
 	}
 
-	config, err := external.LoadDefaultAWSConfig()
+	conf, err := external.LoadDefaultAWSConfig()
 	if err != nil {
 		return err
 	}
 
-	svc := s3.New(config)
+	svc := s3.New(conf)
 	req := svc.GetBucketVersioningRequest(&s3.GetBucketVersioningInput{
 		Bucket: &s.bucket,
 	})

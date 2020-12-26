@@ -19,6 +19,23 @@ func NewPostgres(cfg config.PostgresConfig) Postgres {
 	return Postgres{cfg}
 }
 
+func (p Postgres) Check(target string) error {
+	cfg, err := p.targetConfig(target)
+	if err != nil {
+		return errors.New("Wrong target:" + target)
+	}
+
+	out, err := p.cmd(cfg, "psql", "-l")
+	if err != nil {
+		if execErr, ok := err.(*exec.ExitError); ok {
+			return errors.New(string(execErr.Stderr) + ":" + string(out))
+		}
+		return err
+	}
+
+	return nil
+}
+
 func (p Postgres) List(target string) ([]domain.Database, error) {
 	var list []domain.Database
 	cfg, err := p.targetConfig(target)
@@ -195,7 +212,7 @@ func (p Postgres) Count(dbname, table string) (int, error) {
 }
 
 func (p Postgres) cmd(cfg config.PostgresConfig, name string, arg ...string) ([]byte, error) {
-	arg = append(arg, "-h", cfg.Host, "-U", cfg.User, "-p", cfg.Port)
+	arg = append(arg, "-h", cfg.Host, "-U", cfg.User, "-p", strconv.Itoa(cfg.Port))
 
 	cmd := exec.Command(name, arg...)
 	cmd.Env = append(os.Environ(),
@@ -216,7 +233,12 @@ func (p Postgres) targetConfig(target string) (config.PostgresConfig, error) {
 		cfg.Host = partTarget[0]
 	}
 	if len(partTarget) > 1 {
-		cfg.Port = partTarget[1]
+		port, err := strconv.Atoi(partTarget[1])
+		if err != nil {
+			return cfg, err
+		}
+
+		cfg.Port = port
 	}
 
 	return cfg, nil

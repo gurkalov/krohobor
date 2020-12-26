@@ -29,6 +29,10 @@ func NewMemory() Memory {
 	return Memory{list}
 }
 
+func (m Memory) Check(target string) error {
+	return nil
+}
+
 func (m Memory) List(target string) ([]domain.Database, error) {
 	return m.list, nil
 }

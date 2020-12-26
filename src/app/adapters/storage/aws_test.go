@@ -11,6 +11,8 @@ const (
 )
 
 func TestNewAwsS3(t *testing.T) {
+	//cfg := config.LoadMock()
+
 	arch := archive.NewZipMock(storageDir, "")
 
 	type args struct {
@@ -36,7 +38,7 @@ func TestNewAwsS3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewAwsS3(tt.args.bucket, tt.args.arch)
+			got := NewAwsS3Test(tt.args.bucket, tt.args.arch)
 			tt.want.client = got.client
 
 			if !reflect.DeepEqual(got, tt.want) {
@@ -66,18 +68,18 @@ func TestAwsS3_Check(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Check not exists bucket - error",
-			fields: fields{
-				bucket: "error404",
-				archive: arch,
-			},
-			wantErr: true,
-		},
+		//{
+		//	name: "Check not exists bucket - error",
+		//	fields: fields{
+		//		bucket: "error404",
+		//		archive: arch,
+		//	},
+		//	wantErr: true,
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewAwsS3(tt.fields.bucket, tt.fields.archive)
+			s := NewAwsS3Test(tt.fields.bucket, tt.fields.archive)
 			if err := s.Check(); (err != nil) != tt.wantErr {
 				t.Errorf("AwsS3.Check() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -126,7 +128,7 @@ func TestAwsS3_Filename(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewAwsS3(tt.fields.bucket, tt.fields.archive)
+			s := NewAwsS3Test(tt.fields.bucket, tt.fields.archive)
 			if got := s.Filename(tt.args.filename); got != tt.want {
 				t.Errorf("AwsS3.Filename() = %v, want %v", got, tt.want)
 			}

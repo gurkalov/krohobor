@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"errors"
+	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"github.com/urfave/cli/v2"
 	"krohobor/app/adapters/archive"
 	"krohobor/app/adapters/config"
@@ -13,14 +16,84 @@ import (
 	"strconv"
 )
 
+func InitDatabase(cfg config.Config) (database.Interface, error) {
+	var dbConfig config.DatabaseConfig
+	for _, v := range cfg.Databases {
+		if v.Name == cfg.App.Database {
+			dbConfig = v
+			break
+		}
+	}
+
+	if dbConfig.Name == "" {
+		return nil, errors.New(fmt.Sprintf("Database %s not found", cfg.App.Database))
+	}
+
+	switch dbConfig.Driver {
+	case "postgres": {
+		var conf config.PostgresConfig
+		if err := mapstructure.Decode(dbConfig.Options, &conf); err != nil {
+			return nil, errors.New(fmt.Sprintf("Database %s not found", cfg.App.Database))
+		}
+		return database.NewPostgres(conf), nil
+	}
+	case "memory": {
+		return database.NewMemory(), nil
+	}
+	}
+
+	return nil, errors.New(fmt.Sprintf("Database %s driver %s error", cfg.App.Database, dbConfig.Driver))
+}
+
+func InitStorage(cfg config.Config, arch archive.Interface) (storage.Interface, error) {
+	var storageConfig config.StorageConfig
+	for _, v := range cfg.Storages {
+		if v.Name == cfg.App.Storage {
+			storageConfig = v
+			break
+		}
+	}
+
+	if storageConfig.Name == "" {
+		return nil, errors.New(fmt.Sprintf("Storage %s not found", cfg.App.Storage))
+	}
+
+	switch storageConfig.Driver {
+	case "s3": {
+		var conf config.AwsS3Config
+		if err := mapstructure.Decode(storageConfig.Options, &conf); err != nil {
+			return nil, errors.New(fmt.Sprintf("Storage %s error: %v", cfg.App.Storage, err))
+		}
+		return storage.NewAwsS3(conf, arch), nil
+	}
+	case "file": {
+		var conf config.FileConfig
+		if err := mapstructure.Decode(storageConfig.Options, &conf); err != nil {
+			return nil, errors.New(fmt.Sprintf("Storage %s error: %v", cfg.App.Storage, err))
+		}
+		return storage.NewFile(conf.Catalog, arch), nil
+	}
+	}
+
+	return nil, errors.New(fmt.Sprintf("Storage %s driver %s error", cfg.App.Storage, storageConfig.Driver))
+}
+
 func App(cfg config.Config) *cli.App {
 	app := &cli.App{}
 
-	dbPostgres := database.NewPostgres(cfg.Postgres)
+	db, err := InitDatabase(cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	zipArchive := archive.Zip{
 		Password: cfg.App.Password,
 	}
-	s3Storage := storage.NewAwsS3(cfg.App.Catalog, zipArchive)
+
+	store, err := InitStorage(cfg, zipArchive)
+	if err != nil {
+		panic(err)
+	}
 
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
@@ -51,7 +124,7 @@ func App(cfg config.Config) *cli.App {
 			Aliases: []string{},
 			Usage:   "Status info",
 			Action: (actions.Status{
-				UseCase: usecases.NewStatus(cfg, dbPostgres, s3Storage),
+				UseCase: usecases.NewStatus(cfg, db, store),
 			}).Action(cfg),
 		},
 		{
@@ -72,14 +145,14 @@ func App(cfg config.Config) *cli.App {
 					Name:  "list",
 					Usage: "list of databases",
 					Action: (actions.DbList{
-						UseCase: usecases.NewDbList(dbPostgres),
+						UseCase: usecases.NewDbList(db),
 					}).Action(cfg),
 				},
 				{
 					Name:  "read",
 					Usage: "read a database",
 					Action: (actions.DbRead{
-						UseCase: usecases.NewDbRead(dbPostgres),
+						UseCase: usecases.NewDbRead(db),
 					}).Action(cfg),
 				},
 			},
@@ -93,28 +166,28 @@ func App(cfg config.Config) *cli.App {
 					Name:  "create",
 					Usage: "create dump",
 					Action: (actions.DumpCreate{
-						UseCase: usecases.NewDumpCreate(dbPostgres, s3Storage),
+						UseCase: usecases.NewDumpCreate(db, store),
 					}).Action(cfg),
 				},
 				{
 					Name:  "list",
 					Usage: "list of dumps",
 					Action: (actions.DumpList{
-						UseCase: usecases.NewDumpList(s3Storage),
+						UseCase: usecases.NewDumpList(store),
 					}).Action(cfg),
 				},
 				{
 					Name:  "restore",
 					Usage: "restore dump",
 					Action: (actions.DumpRestore{
-						UseCase: usecases.NewDumpRestore(dbPostgres, s3Storage),
+						UseCase: usecases.NewDumpRestore(db, store),
 					}).Action(cfg),
 				},
 				{
 					Name:  "delete",
 					Usage: "delete backup",
 					Action: (actions.DumpDelete{
-						UseCase: usecases.NewDumpDelete(s3Storage),
+						UseCase: usecases.NewDumpDelete(store),
 					}).Action(cfg),
 				},
 			},

@@ -1,44 +1,69 @@
 package config
 
 import (
-	"github.com/BurntSushi/toml"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 )
 
 type Config struct {
 	App AppConfig
-	Postgres PostgresConfig
+	Databases []DatabaseConfig
+	Storages  []StorageConfig
 }
 
 type AppConfig struct {
 	Port     int
-	Catalog  string
 	Password string
+	Database string
+	Storage  string
 }
 
 type PostgresConfig struct {
 	Host     string
-	Port     string
+	Port     int
 	DB       string
 	User     string
 	Password string
 }
 
+type AwsS3Config struct {
+	Catalog   string
+	KeyId     string
+	AccessKey string
+	Region    string
+}
+
+type FileConfig struct {
+	Catalog   string
+}
+
+type DatabaseConfig struct {
+	Name     string
+	Driver   string
+	Options  map[string]interface{}
+}
+
+type StorageConfig struct {
+	Name     string
+	Driver   string
+	Options  map[string]interface{}
+}
+
 func Load(filename string) Config {
 	cfg := Config{}
 
-	if _, err := toml.DecodeFile(filename, &cfg); err != nil {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		port, _ := strconv.Atoi(os.Getenv("APP_PORT"))
 		cfg.App.Port = port
 		cfg.App.Password = os.Getenv("APP_PASSWORD")
-		cfg.App.Catalog = os.Getenv("APP_CATALOG")
-
-		cfg.Postgres.Host = os.Getenv("PGHOST")
-		cfg.Postgres.Port = os.Getenv("PGPORT")
-		cfg.Postgres.DB = os.Getenv("PGDB")
-		cfg.Postgres.User = os.Getenv("PGUSER")
-		cfg.Postgres.Password = os.Getenv("PGPASSWORD")
 	}
 
 	return cfg

@@ -5,6 +5,7 @@ import (
 )
 
 type Interface interface {
+	Check(target string) error
 	List(target string) ([]domain.Database, error)
 	Tables(table, target string) ([]domain.Table, error)
 	Count(string, string) (int, error)

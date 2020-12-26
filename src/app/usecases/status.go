@@ -11,8 +11,8 @@ type StatusInterface interface {
 }
 
 type Status struct {
-	cfg config.Config
-	db database.Interface
+	cfg     config.Config
+	db      database.Interface
 	storage storage.Interface
 }
 
@@ -21,14 +21,20 @@ type StatusRequest struct {
 }
 
 type StatusResponse struct {
-	Db struct {
-		Check bool
-		Host  string
-	}
-	Storage struct {
-		Check bool
-		Host  string
-	}
+	Db      StatusDb
+	Storage StatusStorage
+}
+
+type StatusDb struct {
+	Check bool
+	Error error
+	Host  string
+}
+
+type StatusStorage struct {
+	Check   bool
+	Error   error
+	Catalog string
 }
 
 func NewStatus(cfg config.Config, db database.Interface, storage storage.Interface) *Status {
@@ -38,11 +44,20 @@ func NewStatus(cfg config.Config, db database.Interface, storage storage.Interfa
 func (s *Status) Execute(request StatusRequest) (StatusResponse, error) {
 	response := StatusResponse{}
 
-	response.Db.Check = true
-	response.Storage.Check = s.storage.Check() == nil
+	errDb := s.db.Check(request.Target)
+	response.Db.Check = errDb == nil
+	response.Db.Error = errDb
 
-	response.Db.Host = s.cfg.Postgres.Host + ":" + s.cfg.Postgres.Port
-	response.Storage.Host = s.cfg.App.Catalog
+	errStorage := s.storage.Check()
+	response.Storage.Check = errStorage == nil
+	response.Storage.Error = errStorage
+
+	//if request.Target == "" {
+	//	response.Db.Host = s.cfg.Postgres.Host + ":" + strconv.Itoa(s.cfg.Postgres.Port)
+	//} else {
+	//	response.Db.Host = request.Target
+	//}
+	//response.Storage.Catalog = s.cfg.App.Catalog
 
 	return response, nil
 }

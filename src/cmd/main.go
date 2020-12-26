@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	configFile := flag.String("config", ".env", "a string")
+	configFile := flag.String("config", "config.yaml", "a string")
 	cfg := config.Load(*configFile)
 
 	app := cli.App(cfg)

@@ -1,8 +1,5 @@
-src/.env
-.env
+src/config.yaml
 .idea/
-*.env
-*/*.env
-*/*.pgpass
 *.sql
 src/krohobor
+.env
