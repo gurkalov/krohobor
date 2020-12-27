@@ -13,9 +13,7 @@ type DbList struct {
 	db database.Interface
 }
 
-type DbListRequest struct {
-	Target string
-}
+type DbListRequest struct {}
 
 type DbListResponse struct {
 	List []domain.Database
@@ -28,7 +26,7 @@ func NewDbList(db database.Interface) *DbList {
 func (dl *DbList) Execute(request DbListRequest) (DbListResponse, error) {
 	response := DbListResponse{}
 
-	resp, err := dl.db.List(request.Target)
+	resp, err := dl.db.List()
 	if err != nil {
 		return response, err
 	}

@@ -78,45 +78,16 @@ func TestStatus_Execute(t *testing.T) {
 				storage: store,
 			},
 			args: args{
-				request: StatusRequest{
-					Target: "",
-				},
+				request: StatusRequest{},
 			},
 			want: StatusResponse{
 				Db: StatusDb{
 					Check: true,
 					Error: nil,
-					Host: ":0",
 				},
 				Storage: StatusStorage{
 					Check: true,
 					Error: nil,
-					Catalog: "",
-				},
-			},
-		},
-		{
-			name: "Status with target - successful",
-			fields: fields{
-				cfg: cfg,
-				db: db,
-				storage: store,
-			},
-			args: args{
-				request: StatusRequest{
-					Target: "localhost:5432",
-				},
-			},
-			want: StatusResponse{
-				Db: StatusDb{
-					Check: true,
-					Error: nil,
-					Host: "localhost:5432",
-				},
-				Storage: StatusStorage{
-					Check: true,
-					Error: nil,
-					Catalog: "",
 				},
 			},
 		},

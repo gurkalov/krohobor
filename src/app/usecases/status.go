@@ -16,9 +16,7 @@ type Status struct {
 	storage storage.Interface
 }
 
-type StatusRequest struct {
-	Target string
-}
+type StatusRequest struct {}
 
 type StatusResponse struct {
 	Db      StatusDb
@@ -28,13 +26,11 @@ type StatusResponse struct {
 type StatusDb struct {
 	Check bool
 	Error error
-	Host  string
 }
 
 type StatusStorage struct {
 	Check   bool
 	Error   error
-	Catalog string
 }
 
 func NewStatus(cfg config.Config, db database.Interface, storage storage.Interface) *Status {
@@ -44,7 +40,7 @@ func NewStatus(cfg config.Config, db database.Interface, storage storage.Interfa
 func (s *Status) Execute(request StatusRequest) (StatusResponse, error) {
 	response := StatusResponse{}
 
-	errDb := s.db.Check(request.Target)
+	errDb := s.db.Check()
 	response.Db.Check = errDb == nil
 	response.Db.Error = errDb
 

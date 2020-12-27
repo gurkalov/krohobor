@@ -1,9 +1,6 @@
 package cli
 
 import (
-	"errors"
-	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"github.com/urfave/cli/v2"
 	"krohobor/app/adapters/archive"
 	"krohobor/app/adapters/config"
@@ -16,103 +13,81 @@ import (
 	"strconv"
 )
 
-func InitDatabase(cfg config.Config) (database.Interface, error) {
-	var dbConfig config.DatabaseConfig
-	for _, v := range cfg.Databases {
-		if v.Name == cfg.App.Database {
-			dbConfig = v
-			break
-		}
+func UseDatabase(name string, cfg config.Config) (database.Interface, error) {
+	if name == "" {
+		name = cfg.App.Database
 	}
 
-	if dbConfig.Name == "" {
-		return nil, errors.New(fmt.Sprintf("Database %s not found", cfg.App.Database))
-	}
-
-	switch dbConfig.Driver {
-	case "postgres": {
-		var conf config.PostgresConfig
-		if err := mapstructure.Decode(dbConfig.Options, &conf); err != nil {
-			return nil, errors.New(fmt.Sprintf("Database %s not found", cfg.App.Database))
-		}
-		return database.NewPostgres(conf), nil
-	}
-	case "memory": {
-		return database.NewMemory(), nil
-	}
-	}
-
-	return nil, errors.New(fmt.Sprintf("Database %s driver %s error", cfg.App.Database, dbConfig.Driver))
-}
-
-func InitStorage(cfg config.Config, arch archive.Interface) (storage.Interface, error) {
-	var storageConfig config.StorageConfig
-	for _, v := range cfg.Storages {
-		if v.Name == cfg.App.Storage {
-			storageConfig = v
-			break
-		}
-	}
-
-	if storageConfig.Name == "" {
-		return nil, errors.New(fmt.Sprintf("Storage %s not found", cfg.App.Storage))
-	}
-
-	switch storageConfig.Driver {
-	case "s3": {
-		var conf config.AwsS3Config
-		if err := mapstructure.Decode(storageConfig.Options, &conf); err != nil {
-			return nil, errors.New(fmt.Sprintf("Storage %s error: %v", cfg.App.Storage, err))
-		}
-		return storage.NewAwsS3(conf, arch), nil
-	}
-	case "file": {
-		var conf config.FileConfig
-		if err := mapstructure.Decode(storageConfig.Options, &conf); err != nil {
-			return nil, errors.New(fmt.Sprintf("Storage %s error: %v", cfg.App.Storage, err))
-		}
-		return storage.NewFile(conf.Catalog, arch), nil
-	}
-	}
-
-	return nil, errors.New(fmt.Sprintf("Storage %s driver %s error", cfg.App.Storage, storageConfig.Driver))
-}
-
-func App(cfg config.Config) *cli.App {
-	app := &cli.App{}
-
-	db, err := InitDatabase(cfg)
+	dbCfg := database.Config(name, cfg)
+	db, err := database.Impl(dbCfg)
 	if err != nil {
-		panic(err)
+		return db, err
+	}
+
+	return db, nil
+}
+
+func UseStorage(name string, cfg config.Config) (storage.Interface, error) {
+	if name == "" {
+		name = cfg.App.Storage
 	}
 
 	zipArchive := archive.Zip{
 		Password: cfg.App.Password,
 	}
 
-	store, err := InitStorage(cfg, zipArchive)
+	storeCfg := storage.Config(name, cfg)
+	store, err := storage.Impl(storeCfg, zipArchive)
 	if err != nil {
-		panic(err)
+		return store, nil
+	}
+
+	return store, nil
+}
+
+func App(cfg config.Config) *cli.App {
+	app := &cli.App{}
+
+	var db database.Interface
+	var store storage.Interface
+	initDeps := func(c *cli.Context) error {
+		var err error
+		db, err = UseDatabase(c.String("database"), cfg)
+		if err != nil {
+			return err
+		}
+
+		store, err = UseStorage(c.String("storage"), cfg)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name: "db",
+			Name:  "dbname",
 			Value: "",
-			Usage: "database",
+			Usage: "Database name",
 		},
 		&cli.StringFlag{
-			Name: "name",
+			Name:  "name",
 			Value: "",
 			Usage: "Backup name",
 		},
 		&cli.StringFlag{
-			Name: "target",
+			Name:  "database",
 			Value: "",
-			Usage: "Target host",
+			Usage: "Use database",
+		},
+		&cli.StringFlag{
+			Name:  "storage",
+			Value: "",
+			Usage: "Use storage",
 		},
 		&cli.IntFlag{
-			Name: "port",
+			Name:  "port",
 			Value: 80,
 			Usage: "Port",
 		},
@@ -123,72 +98,89 @@ func App(cfg config.Config) *cli.App {
 			Name:    "status",
 			Aliases: []string{},
 			Usage:   "Status info",
-			Action: (actions.Status{
-				UseCase: usecases.NewStatus(cfg, db, store),
-			}).Action(cfg),
+			Before:  initDeps,
+			Action: func(c *cli.Context) error {
+				return (actions.Status{
+					UseCase: usecases.NewStatus(cfg, db, store),
+				}).Action(c)
+			},
 		},
 		{
 			Name:    "httpserver",
 			Aliases: []string{"serve"},
 			Usage:   "HTTP Server",
-			Action:  func(c *cli.Context) error {
+			Action: func(c *cli.Context) error {
 				router := httpserver.Router(cfg)
-				return http.ListenAndServe(":" + strconv.Itoa(c.Int("port")), router)
+				return http.ListenAndServe(":"+strconv.Itoa(c.Int("port")), router)
 			},
 		},
 		{
-			Name:        "db",
-			Aliases:     []string{"db"},
-			Usage:       "options for task templates",
+			Name:    "db",
+			Aliases: []string{"db"},
+			Usage:   "options for task templates",
+			Before:  initDeps,
 			Subcommands: []*cli.Command{
 				{
 					Name:  "list",
 					Usage: "list of databases",
-					Action: (actions.DbList{
-						UseCase: usecases.NewDbList(db),
-					}).Action(cfg),
+					Action: func(c *cli.Context) error {
+						return (actions.DbList{
+							UseCase: usecases.NewDbList(db),
+						}).Action(c)
+					},
 				},
 				{
 					Name:  "read",
 					Usage: "read a database",
-					Action: (actions.DbRead{
-						UseCase: usecases.NewDbRead(db),
-					}).Action(cfg),
+					Action: func(c *cli.Context) error {
+						return (actions.DbRead{
+							UseCase: usecases.NewDbRead(db),
+						}).Action(c)
+					},
 				},
 			},
 		},
 		{
-			Name:        "dump",
-			Aliases:     []string{},
-			Usage:       "Work with dumps",
+			Name:    "dump",
+			Aliases: []string{},
+			Usage:   "Work with dumps",
+			Before:  initDeps,
 			Subcommands: []*cli.Command{
 				{
 					Name:  "create",
 					Usage: "create dump",
-					Action: (actions.DumpCreate{
-						UseCase: usecases.NewDumpCreate(db, store),
-					}).Action(cfg),
+					Action: func(c *cli.Context) error {
+						return (actions.DumpCreate{
+							UseCase: usecases.NewDumpCreate(db, store),
+						}).Action(c)
+					},
 				},
 				{
 					Name:  "list",
 					Usage: "list of dumps",
-					Action: (actions.DumpList{
-						UseCase: usecases.NewDumpList(store),
-					}).Action(cfg),
+					Action: func(c *cli.Context) error {
+						return (actions.DumpList{
+							UseCase: usecases.NewDumpList(store),
+						}).Action(c)
+					},
 				},
 				{
 					Name:  "restore",
 					Usage: "restore dump",
-					Action: (actions.DumpRestore{
-						UseCase: usecases.NewDumpRestore(db, store),
-					}).Action(cfg),
+					Action: func(c *cli.Context) error {
+						return (actions.DumpRestore{
+							UseCase: usecases.NewDumpRestore(db, store),
+						}).Action(c)
+					},
 				},
 				{
 					Name:  "delete",
 					Usage: "delete backup",
-					Action: (actions.DumpDelete{
-						UseCase: usecases.NewDumpDelete(store),
-					}).Action(cfg),
+					Action: func(c *cli.Context) error {
+						return (actions.DumpDelete{
+							UseCase: usecases.NewDumpDelete(store),
+						}).Action(c)
+					},
 				},
 			},
 		},

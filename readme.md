@@ -16,38 +16,41 @@ Show grants for table in database
 List of databases
 ```env
 ./krohobor db list
-./krohobor --target=localhost:5430 db list
-./krohobor --target=localhost:5431 db list
+./krohobor --database=postgres-source db list
+./krohobor --database=postgres-target db list
 ```
 
 Info of database
 ```env
-./krohobor --db=test1 db read
-./krohobor --target=localhost:5430 --db=test1 db read
+./krohobor --database=postgres-source --dbname=test1 db read
+./krohobor --database=postgres-target --dbname=test1 db read
 ```
 
 
 Create dump of all databases
 ```env
-./krohobor dump create
+./krohobor --database=postgres-source dump create
+./krohobor --database=postgres-source --storage=local dump create
 ```
 
 Create dump of concrete databases
 ```env
-./krohobor --db=position dump create
+./krohobor --database=postgres-source --dbname=test1 dump create
+./krohobor --database=postgres-source --storage=local --dbname=test1 dump create
 ```
 
 List of dumps
 ```env
 ./krohobor dump list
+./krohobor --storage=local dump list
 ```
 
 Delete dump
 ```env
-./krohobor --name=all.sql dump delete
+./krohobor --name=test1.sql dump delete
 ```
 
 Restore dump
 ```env
-./krohobor --name=all.sql --target=localhost:5431 dump restore
+./krohobor --name=all.sql --database=postgres-target dump restore
 ```

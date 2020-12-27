@@ -19,7 +19,6 @@ type DumpRestoreRequest struct {
 	Name string
 	DB   string
 	Filename string
-	Target   string
 }
 
 type DumpRestoreResponse struct {
@@ -38,7 +37,7 @@ func (dl *DumpRestore) Execute(request DumpRestoreRequest) (DumpRestoreResponse,
 		return response, err
 	}
 
-	if err := dl.db.Restore(filename, request.Target); err != nil {
+	if err := dl.db.Restore(filename); err != nil {
 		return response, err
 	}
 

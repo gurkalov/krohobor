@@ -19,13 +19,8 @@ func NewPostgres(cfg config.PostgresConfig) Postgres {
 	return Postgres{cfg}
 }
 
-func (p Postgres) Check(target string) error {
-	cfg, err := p.targetConfig(target)
-	if err != nil {
-		return errors.New("Wrong target:" + target)
-	}
-
-	out, err := p.cmd(cfg, "psql", "-l")
+func (p Postgres) Check() error {
+	out, err := p.cmd(p.cfg, "psql", "-l")
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr) + ":" + string(out))
@@ -36,14 +31,9 @@ func (p Postgres) Check(target string) error {
 	return nil
 }
 
-func (p Postgres) List(target string) ([]domain.Database, error) {
+func (p Postgres) List() ([]domain.Database, error) {
 	var list []domain.Database
-	cfg, err := p.targetConfig(target)
-	if err != nil {
-		return list, errors.New("Wrong target:" + target)
-	}
-
-	stdout, err := p.cmd(cfg, "psql", "-t", "-A", `-F","`,
+	stdout, err := p.cmd(p.cfg, "psql", "-t", "-A", `-F","`,
 		"-c", "SELECT datname, pg_database_size(datname) FROM pg_database WHERE datname NOT IN ('postgres', 'template0', 'template1', 'template2');")
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
@@ -112,18 +102,13 @@ func (p Postgres) DumpAll(filename string) error {
 	return nil
 }
 
-func (p Postgres) Restore(filename, target string) error {
+func (p Postgres) Restore(filename string) error {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return err
 	}
 
-	cfg, err := p.targetConfig(target)
-	if err != nil {
-		return errors.New("Wrong target:" + target)
-	}
-
-	out, err := p.cmd(cfg, "psql", "-f", filename)
+	out, err := p.cmd(p.cfg, "psql", "-f", filename)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr) + ":" + string(out))
@@ -151,14 +136,10 @@ func (p Postgres) Drop(dbname, target string) error {
 	return nil
 }
 
-func (p Postgres) Tables(dbname, target string) ([]domain.Table, error) {
+func (p Postgres) Tables(dbname string) ([]domain.Table, error) {
 	var list []domain.Table
 
-	cfg, err := p.targetConfig(target)
-	if err != nil {
-		return list, errors.New("Wrong target:" + target)
-	}
-	stdout, err := p.cmd(cfg, "psql", dbname, "-t", "-A", `-F","`,
+	stdout, err := p.cmd(p.cfg, "psql", dbname, "-t", "-A", `-F","`,
 		"-c", "SELECT t.table_name, pg_total_relation_size(t.table_name::text), s.n_live_tup FROM information_schema.tables t JOIN pg_stat_user_tables s ON t.table_name = s.relname WHERE table_schema='public';")
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {

@@ -29,11 +29,11 @@ func NewMemory() Memory {
 	return Memory{list}
 }
 
-func (m Memory) Check(target string) error {
+func (m Memory) Check() error {
 	return nil
 }
 
-func (m Memory) List(target string) ([]domain.Database, error) {
+func (m Memory) List() ([]domain.Database, error) {
 	return m.list, nil
 }
 
@@ -69,7 +69,7 @@ func (m Memory) DumpAll(filename string) error {
 	return nil
 }
 
-func (m Memory) Restore(filename, target string) error {
+func (m Memory) Restore(filename string) error {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return err
@@ -90,7 +90,7 @@ func (m Memory) Drop(dbname, target string) error {
 	return nil
 }
 
-func (m Memory) Tables(dbname, target string) ([]domain.Table, error) {
+func (m Memory) Tables(dbname string) ([]domain.Table, error) {
 	list := []domain.Table{
 		{
 			Name: "table1",

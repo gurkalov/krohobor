@@ -1,0 +1,42 @@
+app:
+  port: 9900
+  password: ""
+  database: "postgres-source"
+  storage: "krohobor-backup"
+
+storages:
+  - name: "krohobor-backup"
+    driver: "s3"
+    options:
+      catalog: "krohobor-backup"
+      keyId: ""
+      accessKey: ""
+      region: "eu-north-1"
+
+  - name: "local"
+    driver: "file"
+    options:
+      catalog: "/tmp/krohobor-local"
+
+databases:
+  - name: "postgres-source"
+    driver: "postgres"
+    options:
+      host: "localhost"
+      port: 5430
+      db: "postgres"
+      user: "postgres"
+      password: ""
+
+  - name: "postgres-target"
+    driver: "postgres"
+    options:
+      host: "localhost"
+      port: 5431
+      db: "postgres"
+      user: "postgres"
+      password: ""
+
+  - name: "local"
+    driver: "memory"
+    options: []

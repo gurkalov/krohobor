@@ -15,7 +15,6 @@ type DbRead struct {
 
 type DbReadRequest struct {
 	Name string
-	Target string
 }
 
 type DbReadResponse struct {
@@ -29,7 +28,7 @@ func NewDbRead(db database.Interface) *DbRead {
 func (dl *DbRead) Execute(request DbReadRequest) (DbReadResponse, error) {
 	response := DbReadResponse{}
 
-	resp, err := dl.db.Tables(request.Name, request.Target)
+	resp, err := dl.db.Tables(request.Name)
 	if err != nil {
 		return response, err
 	}
