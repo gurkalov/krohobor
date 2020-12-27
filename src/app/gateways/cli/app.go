@@ -138,6 +138,15 @@ func App(cfg config.Config) *cli.App {
 						}).Action(c)
 					},
 				},
+				{
+					Name:  "delete",
+					Usage: "delete a database",
+					Action: func(c *cli.Context) error {
+						return (actions.DbDelete{
+							UseCase: usecases.NewDbDelete(db),
+						}).Action(c)
+					},
+				},
 			},
 		},
 		{

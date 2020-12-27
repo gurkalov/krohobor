@@ -119,13 +119,8 @@ func (p Postgres) Restore(filename string) error {
 	return nil
 }
 
-func (p Postgres) Drop(dbname, target string) error {
-	cfg, err := p.targetConfig(target)
-	if err != nil {
-		return errors.New("Wrong target:" + target)
-	}
-
-	_, err = p.cmd(cfg, "dropdb", dbname)
+func (p Postgres) Drop(dbname string) error {
+	_, err := p.cmd(p.cfg, "dropdb", dbname)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr))
