@@ -7,16 +7,16 @@ import (
 	"krohobor/app/adapters/config"
 )
 
-func Config(name string, cfg config.Config) config.DatabaseConfig {
+func Config(name string, cfg config.Config) (config.DatabaseConfig, error) {
 	var dbConfig config.DatabaseConfig
 	for _, v := range cfg.Databases {
 		if v.Name == name {
 			dbConfig = v
-			break
+			return dbConfig, nil
 		}
 	}
 
-	return dbConfig
+	return dbConfig, errors.New(fmt.Sprintf("Database %s not found", name))
 }
 
 func Impl(dbConfig config.DatabaseConfig) (Interface, error) {
@@ -33,5 +33,5 @@ func Impl(dbConfig config.DatabaseConfig) (Interface, error) {
 	}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Database %s driver %s error", dbConfig.Name, dbConfig.Driver))
+	return nil, errors.New(fmt.Sprintf("Database %s driver %s not found", dbConfig.Name, dbConfig.Driver))
 }

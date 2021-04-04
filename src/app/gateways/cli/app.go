@@ -18,7 +18,11 @@ func UseDatabase(name string, cfg config.Config) (database.Interface, error) {
 		name = cfg.App.Database
 	}
 
-	dbCfg := database.Config(name, cfg)
+	dbCfg, err := database.Config(name, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	db, err := database.Impl(dbCfg)
 	if err != nil {
 		return db, err
@@ -36,10 +40,14 @@ func UseStorage(name string, cfg config.Config) (storage.Interface, error) {
 		Password: cfg.App.Password,
 	}
 
-	storeCfg := storage.Config(name, cfg)
+	storeCfg, err := storage.Config(name, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	store, err := storage.Impl(storeCfg, zipArchive)
 	if err != nil {
-		return store, nil
+		return store, err
 	}
 
 	return store, nil

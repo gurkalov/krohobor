@@ -8,16 +8,16 @@ import (
 	"krohobor/app/adapters/config"
 )
 
-func Config(name string, cfg config.Config) config.StorageConfig {
+func Config(name string, cfg config.Config) (config.StorageConfig, error) {
 	var storageConfig config.StorageConfig
 	for _, v := range cfg.Storages {
 		if v.Name == name {
 			storageConfig = v
-			break
+			return storageConfig, nil
 		}
 	}
 
-	return storageConfig
+	return storageConfig, errors.New(fmt.Sprintf("Storage %s not found", name))
 }
 
 func Impl(storageConfig config.StorageConfig, arch archive.Interface) (Interface, error) {
@@ -38,5 +38,5 @@ func Impl(storageConfig config.StorageConfig, arch archive.Interface) (Interface
 	}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Storage %s driver %s error", storageConfig.Name, storageConfig.Driver))
+	return nil, errors.New(fmt.Sprintf("Storage %s driver %s not found", storageConfig.Name, storageConfig.Driver))
 }
