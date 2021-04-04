@@ -136,15 +136,6 @@ func TestZip_Unarchive(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Unarchive with password - empty password - error",
-			zip:  NewZip(tmpDir, ""),
-			args: args{
-				file: tmpDir + "/test-mock-with-password.zip",
-			},
-			want:    "",
-			wantErr: true,
-		},
-		{
 			name: "Unarchive with password - wrong password - error",
 			zip:  NewZip(tmpDir, "1234"),
 			args: args{

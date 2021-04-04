@@ -37,7 +37,7 @@ func (dl *DumpRestore) Execute(request DumpRestoreRequest) (DumpRestoreResponse,
 		return response, err
 	}
 
-	if err := dl.db.Restore(filename); err != nil {
+	if err := dl.db.Restore(filename, request.Name); err != nil {
 		return response, err
 	}
 

@@ -139,6 +139,15 @@ func App(cfg config.Config) *cli.App {
 					},
 				},
 				{
+					Name:  "create",
+					Usage: "create a database",
+					Action: func(c *cli.Context) error {
+						return (actions.DbCreate{
+							UseCase: usecases.NewDbCreate(db),
+						}).Action(c)
+					},
+				},
+				{
 					Name:  "delete",
 					Usage: "delete a database",
 					Action: func(c *cli.Context) error {

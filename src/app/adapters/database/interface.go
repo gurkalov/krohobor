@@ -13,5 +13,5 @@ type Interface interface {
 	Dump(string, string) error
 	DumpAll(string) error
 	Drop(dbname string) error
-	Restore(filename string) error
+	Restore(filename, dbname string) error
 }

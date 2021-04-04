@@ -26,6 +26,17 @@ Info of database
 ./krohobor --database=postgres-target --dbname=test1 db read
 ```
 
+Create a database
+```env
+./krohobor --database=postgres-source --dbname=test_new db create
+./krohobor --database=postgres-target --dbname=test_new db create
+```
+
+Delete a database
+```env
+./krohobor --database=postgres-source --dbname=test_new db delete
+./krohobor --database=postgres-target --dbname=test_new db delete
+```
 
 Create dump of all databases
 ```env
@@ -53,4 +64,9 @@ Delete dump
 Restore dump
 ```env
 ./krohobor --name=all.sql --database=postgres-target dump restore
+```
+
+Restore dump to database
+```env
+./krohobor --name=all.sql --database=postgres-target --dbname=new dump restore
 ```

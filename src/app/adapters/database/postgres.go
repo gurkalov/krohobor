@@ -102,13 +102,13 @@ func (p Postgres) DumpAll(filename string) error {
 	return nil
 }
 
-func (p Postgres) Restore(filename string) error {
+func (p Postgres) Restore(filename, dbname string) error {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return err
 	}
 
-	out, err := p.cmd(p.cfg, "psql", "-f", filename)
+	out, err := p.cmd(p.cfg, "psql", "-f", filename, dbname)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr) + ":" + string(out))

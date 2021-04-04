@@ -6,16 +6,14 @@ import (
 	"krohobor/app/usecases"
 )
 
-type DumpRestore struct {
-	UseCase usecases.DumpRestoreInterface
+type DbCreate struct {
+	UseCase usecases.DbCreateInterface
 }
 
-func (d DumpRestore) Action(c *cli.Context) error {
-	request := usecases.DumpRestoreRequest{
+func (d DbCreate) Action(c *cli.Context) error {
+	request := usecases.DbCreateRequest{
 		Name: c.String("dbname"),
-		Filename: c.String("name"),
 	}
-
 	resp, err := d.UseCase.Execute(request)
 	if err != nil {
 		fmt.Println(err.Error())
