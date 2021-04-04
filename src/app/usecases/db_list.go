@@ -13,7 +13,7 @@ type DbList struct {
 	db database.Interface
 }
 
-type DbListRequest struct {}
+type DbListRequest struct{}
 
 type DbListResponse struct {
 	List []domain.Database

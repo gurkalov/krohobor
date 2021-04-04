@@ -12,7 +12,7 @@ import (
 )
 
 type Postgres struct {
-    cfg config.PostgresConfig
+	cfg config.PostgresConfig
 }
 
 func NewPostgres(cfg config.PostgresConfig) Postgres {
@@ -91,7 +91,7 @@ func (p Postgres) Dump(dbname, filename string) error {
 }
 
 func (p Postgres) DumpAll(filename string) error {
-	_, err := p.cmd(p.cfg, "pg_dumpall","-f", filename)
+	_, err := p.cmd(p.cfg, "pg_dumpall", "-f", filename)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr))
@@ -162,8 +162,8 @@ func (p Postgres) Tables(dbname string) ([]domain.Table, error) {
 		}
 
 		db := domain.Table{
-			Name: cols[0],
-			Size: size,
+			Name:  cols[0],
+			Size:  size,
 			Count: count,
 		}
 		list = append(list, db)
@@ -192,7 +192,7 @@ func (p Postgres) cmd(cfg config.PostgresConfig, name string, arg ...string) ([]
 
 	cmd := exec.Command(name, arg...)
 	cmd.Env = append(os.Environ(),
-		"PGPASSWORD=" + cfg.Password,
+		"PGPASSWORD="+cfg.Password,
 	)
 
 	return cmd.Output()

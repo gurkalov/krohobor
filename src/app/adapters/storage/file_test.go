@@ -43,7 +43,6 @@ func TestNewFile(t *testing.T) {
 	}
 }
 
-
 func TestFile_Check(t *testing.T) {
 	arch := archive.NewZipMock(storageDir, "")
 	NewFileMock(storageDir, arch)
@@ -54,13 +53,13 @@ func TestFile_Check(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Check with archive - successful",
-			file: NewFile(storageDir, arch),
+			name:    "Check with archive - successful",
+			file:    NewFile(storageDir, arch),
 			wantErr: false,
 		},
 		{
-			name: "Check witour archive - successful",
-			file: NewFile(storageDir, nil),
+			name:    "Check witour archive - successful",
+			file:    NewFile(storageDir, nil),
 			wantErr: false,
 		},
 	}
@@ -220,7 +219,7 @@ func TestFile_Delete(t *testing.T) {
 			args: args{
 				"file404.txt",
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -276,4 +275,3 @@ func TestFile_List(t *testing.T) {
 		})
 	}
 }
-

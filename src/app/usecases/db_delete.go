@@ -16,7 +16,7 @@ type DbDeleteRequest struct {
 	Name string
 }
 
-type DbDeleteResponse struct {}
+type DbDeleteResponse struct{}
 
 func NewDbDelete(db database.Interface) *DbDelete {
 	return &DbDelete{db}

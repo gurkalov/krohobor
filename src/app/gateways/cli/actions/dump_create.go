@@ -24,7 +24,7 @@ func (d DumpCreate) Action(c *cli.Context) error {
 	filename := fmt.Sprintf("%s.sql", dbs)
 
 	request := usecases.DumpCreateRequest{
-		DbNames: dbNames,
+		DbNames:  dbNames,
 		Filename: filename,
 	}
 

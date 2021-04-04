@@ -6,7 +6,7 @@ import (
 )
 
 type Dump struct {
-	db database.Interface
+	db      database.Interface
 	storage storage.Interface
 }
 

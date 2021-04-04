@@ -28,13 +28,13 @@ func TestNewStatus(t *testing.T) {
 		{
 			name: "Test",
 			args: args{
-				cfg: cfg,
-				db: db,
+				cfg:     cfg,
+				db:      db,
 				storage: store,
 			},
 			want: &Status{
-				cfg: cfg,
-				db: db,
+				cfg:     cfg,
+				db:      db,
 				storage: store,
 			},
 		},
@@ -73,8 +73,8 @@ func TestStatus_Execute(t *testing.T) {
 		{
 			name: "Status - successful",
 			fields: fields{
-				cfg: cfg,
-				db: db,
+				cfg:     cfg,
+				db:      db,
 				storage: store,
 			},
 			args: args{

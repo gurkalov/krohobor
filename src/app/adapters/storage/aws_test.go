@@ -11,8 +11,6 @@ const (
 )
 
 func TestNewAwsS3(t *testing.T) {
-	//cfg := config.LoadMock()
-
 	arch := archive.NewZipMock(storageDir, "")
 
 	type args struct {
@@ -27,11 +25,11 @@ func TestNewAwsS3(t *testing.T) {
 		{
 			name: "Test",
 			args: args{
-				bucket:  bucket,
-				arch: arch,
+				bucket: bucket,
+				arch:   arch,
 			},
 			want: AwsS3{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 		},
@@ -63,19 +61,11 @@ func TestAwsS3_Check(t *testing.T) {
 		{
 			name: "Check - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			wantErr: false,
 		},
-		//{
-		//	name: "Check not exists bucket - error",
-		//	fields: fields{
-		//		bucket: "error404",
-		//		archive: arch,
-		//	},
-		//	wantErr: true,
-		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -106,24 +96,24 @@ func TestAwsS3_Filename(t *testing.T) {
 		{
 			name: "Filename with arch - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			args: args{
 				filename: "test.txt",
 			},
-			want: "test.txt",
+			want: "/tmp/test.txt",
 		},
 		{
 			name: "Filename without arch - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			args: args{
 				filename: "test.txt",
 			},
-			want: "test.txt",
+			want: "/tmp/test.txt",
 		},
 	}
 	for _, tt := range tests {
@@ -156,49 +146,49 @@ func TestAwsS3_Read(t *testing.T) {
 		{
 			name: "Read with arch first - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			args: args{
 				filename: "file1",
 			},
-			want: "/tmp/krohobor/storage/file1",
+			want:    "/tmp/krohobor/storage/file1",
 			wantErr: false,
 		},
 		{
 			name: "Read with arch not exists - error",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			args: args{
 				filename: "file404",
 			},
-			want: "",
+			want:    "",
 			wantErr: true,
 		},
 		{
 			name: "Read without arch first - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			args: args{
 				filename: "file1",
 			},
-			want: "/tmp/file1",
+			want:    "/tmp/file1",
 			wantErr: false,
 		},
 		{
 			name: "Read without arch not exists - error",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			args: args{
 				filename: "file404",
 			},
-			want: "",
+			want:    "",
 			wantErr: true,
 		},
 	}
@@ -236,44 +226,44 @@ func TestAwsS3_Write(t *testing.T) {
 		{
 			name: "Write with arch first - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			args: args{
-				filename: "/tmp/krohobor/storage/mock/file1",
+				filename: "krohobor/storage/mock/file1",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Write with arch second - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			args: args{
-				filename: "/tmp/krohobor/storage/mock/file2",
+				filename: "krohobor/storage/mock/file2",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Write without arch first - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			args: args{
-				filename: "/tmp/krohobor/storage/mock/file1",
+				filename: "file3",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Write without arch second - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			args: args{
-				filename: "/tmp/krohobor/storage/mock/file2",
+				filename: "file4",
 			},
 			wantErr: false,
 		},
@@ -307,7 +297,7 @@ func TestAwsS3_Delete(t *testing.T) {
 		{
 			name: "Delete with arch first - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			args: args{
@@ -318,7 +308,7 @@ func TestAwsS3_Delete(t *testing.T) {
 		{
 			name: "Delete with arch not exists - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			args: args{
@@ -329,7 +319,7 @@ func TestAwsS3_Delete(t *testing.T) {
 		{
 			name: "Delete without arch first - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			args: args{
@@ -340,7 +330,7 @@ func TestAwsS3_Delete(t *testing.T) {
 		{
 			name: "Delete without arch not exists - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			args: args{
@@ -375,7 +365,7 @@ func TestAwsS3_List(t *testing.T) {
 		{
 			name: "List with arch - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: arch,
 			},
 			want: []string{
@@ -387,7 +377,7 @@ func TestAwsS3_List(t *testing.T) {
 		{
 			name: "List without arch - successful",
 			fields: fields{
-				bucket: bucket,
+				bucket:  bucket,
 				archive: nil,
 			},
 			want: []string{

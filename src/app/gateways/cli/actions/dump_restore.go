@@ -12,7 +12,7 @@ type DumpRestore struct {
 
 func (d DumpRestore) Action(c *cli.Context) error {
 	request := usecases.DumpRestoreRequest{
-		Name: c.String("dbname"),
+		Name:     c.String("dbname"),
 		Filename: c.String("name"),
 	}
 

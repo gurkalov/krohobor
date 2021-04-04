@@ -9,12 +9,12 @@ import (
 )
 
 type Zip struct {
-	Dir string
+	Dir      string
 	Password string
 }
 
 func NewZip(dir, password string) Zip {
-	return Zip{dir,  password}
+	return Zip{dir, password}
 }
 
 func NewZipMock(dir, password string) Zip {
@@ -24,29 +24,29 @@ func NewZipMock(dir, password string) Zip {
 
 	mockDirPath := dir + "/mock"
 
-	zip := Zip{dir,  password}
+	zip := Zip{dir, password}
 	if err := os.MkdirAll(mockDirPath, os.ModePerm); err != nil {
 		panic(err)
 	}
-	if err := zip.Archive(dir + "/test-mock-empty-folder.zip", mockDirPath); err != nil {
+	if err := zip.Archive(dir+"/test-mock-empty-folder.zip", mockDirPath); err != nil {
 		panic(err)
 	}
 
 	d1 := []byte("hello")
-	if err := ioutil.WriteFile(mockDirPath + "/file1", d1, 0644); err != nil {
+	if err := ioutil.WriteFile(mockDirPath+"/file1", d1, 0644); err != nil {
 		panic(err)
 	}
 
-	if err := ioutil.WriteFile(mockDirPath + "/file2", d1, 0644); err != nil {
+	if err := ioutil.WriteFile(mockDirPath+"/file2", d1, 0644); err != nil {
 		panic(err)
 	}
 
-	if err := zip.Archive(dir + "/test-mock-with-password.zip", mockDirPath + "/file2"); err != nil {
+	if err := zip.Archive(dir+"/test-mock-with-password.zip", mockDirPath+"/file2"); err != nil {
 		panic(err)
 	}
 
-	zipWithoutPass := Zip{dir,  ""}
-	if err := zipWithoutPass.Archive(dir + "/test-mock-without-password.zip", mockDirPath + "/file2"); err != nil {
+	zipWithoutPass := Zip{dir, ""}
+	if err := zipWithoutPass.Archive(dir+"/test-mock-without-password.zip", mockDirPath+"/file2"); err != nil {
 		panic(err)
 	}
 
@@ -109,7 +109,7 @@ func (s Zip) extract(out []byte) (string, error) {
 		}
 		find = findInf
 	}
-	res := strings.TrimSpace(string(out[index + len(find):]))
+	res := strings.TrimSpace(string(out[index+len(find):]))
 	return string(res), nil
 }
 

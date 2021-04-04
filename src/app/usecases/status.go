@@ -16,7 +16,7 @@ type Status struct {
 	storage storage.Interface
 }
 
-type StatusRequest struct {}
+type StatusRequest struct{}
 
 type StatusResponse struct {
 	Db      StatusDb
@@ -29,8 +29,8 @@ type StatusDb struct {
 }
 
 type StatusStorage struct {
-	Check   bool
-	Error   error
+	Check bool
+	Error error
 }
 
 func NewStatus(cfg config.Config, db database.Interface, storage storage.Interface) *Status {

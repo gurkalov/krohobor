@@ -66,8 +66,8 @@ func TestDbRead_Execute(t *testing.T) {
 			want: DbReadResponse{
 				List: []domain.Table{
 					{
-						Name: "table1",
-						Size: 10000,
+						Name:  "table1",
+						Size:  10000,
 						Count: 0,
 					},
 				},

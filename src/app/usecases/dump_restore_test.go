@@ -24,11 +24,11 @@ func TestNewDumpRestore(t *testing.T) {
 		{
 			name: "Test",
 			args: args{
-				db: db,
+				db:    db,
 				store: store,
 			},
 			want: &DumpRestore{
-				db: db,
+				db:    db,
 				store: store,
 			},
 		},
@@ -68,12 +68,12 @@ func TestDumpRestore_Execute(t *testing.T) {
 		{
 			name: "Test without arch - successful",
 			fields: fields{
-				db: db,
+				db:    db,
 				store: store,
 			},
 			args: args{
 				request: DumpRestoreRequest{
-					Name: "test1",
+					Name:     "test1",
 					Filename: "file1.txt",
 				},
 			},
@@ -82,12 +82,12 @@ func TestDumpRestore_Execute(t *testing.T) {
 		{
 			name: "Test with arch - successful",
 			fields: fields{
-				db: db,
+				db:    db,
 				store: storeWithArch,
 			},
 			args: args{
 				request: DumpRestoreRequest{
-					Name: "test1",
+					Name:     "test1",
 					Filename: "file1.txt",
 				},
 			},

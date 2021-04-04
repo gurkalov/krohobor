@@ -62,7 +62,7 @@ func TestDbDelete_Execute(t *testing.T) {
 					Name: "test1",
 				},
 			},
-			want: DbDeleteResponse{},
+			want:    DbDeleteResponse{},
 			wantErr: false,
 		},
 	}

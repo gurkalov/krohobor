@@ -62,7 +62,7 @@ func TestDbCreate_Execute(t *testing.T) {
 					Name: "test5",
 				},
 			},
-			want: DbCreateResponse{},
+			want:    DbCreateResponse{},
 			wantErr: false,
 		},
 	}

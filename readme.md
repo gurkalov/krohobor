@@ -68,5 +68,5 @@ Restore dump
 
 Restore dump to database
 ```env
-./krohobor --name=all.sql --database=postgres-target --dbname=new dump restore
+./krohobor --name=test1.sql --database=postgres-target --dbname=new dump restore
 ```

@@ -53,7 +53,7 @@ func TestZip_Check(t *testing.T) {
 		{
 			name: "Check",
 			fields: fields{
-				Dir: tmpDir,
+				Dir:      tmpDir,
 				Password: "",
 			},
 			wantErr: false,
@@ -185,4 +185,3 @@ func TestZip_Unarchive(t *testing.T) {
 		})
 	}
 }
-

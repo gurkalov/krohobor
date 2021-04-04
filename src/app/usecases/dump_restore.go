@@ -11,13 +11,13 @@ type DumpRestoreInterface interface {
 }
 
 type DumpRestore struct {
-	db database.Interface
+	db    database.Interface
 	store storage.Interface
 }
 
 type DumpRestoreRequest struct {
-	Name string
-	DB   string
+	Name     string
+	DB       string
 	Filename string
 }
 
@@ -38,6 +38,10 @@ func (dl *DumpRestore) Execute(request DumpRestoreRequest) (DumpRestoreResponse,
 	}
 
 	if err := dl.db.Restore(filename, request.Name); err != nil {
+		return response, err
+	}
+
+	if err := dl.store.Clean(filename); err != nil {
 		return response, err
 	}
 

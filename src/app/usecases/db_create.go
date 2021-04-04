@@ -16,7 +16,7 @@ type DbCreateRequest struct {
 	Name string
 }
 
-type DbCreateResponse struct {}
+type DbCreateResponse struct{}
 
 func NewDbCreate(db database.Interface) *DbCreate {
 	return &DbCreate{db}

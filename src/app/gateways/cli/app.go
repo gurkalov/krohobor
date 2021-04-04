@@ -37,6 +37,7 @@ func UseStorage(name string, cfg config.Config) (storage.Interface, error) {
 	}
 
 	zipArchive := archive.Zip{
+		Dir:      cfg.App.Dir,
 		Password: cfg.App.Password,
 	}
 

@@ -13,7 +13,6 @@ type DumpList struct {
 }
 
 type DumpListRequest struct {
-
 }
 
 type DumpListResponse struct {

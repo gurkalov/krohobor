@@ -77,7 +77,7 @@ func TestDumpDelete_Execute(t *testing.T) {
 			},
 			args: args{
 				request: DumpDeleteRequest{
-					Name: "file1.txt",
+					Name: "file2.txt",
 				},
 			},
 			want: DumpDeleteResponse{},

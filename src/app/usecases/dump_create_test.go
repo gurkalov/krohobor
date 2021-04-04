@@ -10,7 +10,7 @@ import (
 
 func TestNewDumpCreate(t *testing.T) {
 	db := database.NewMemory()
-    store := storage.NewFileMock("/tmp/krohobor/storage", nil)
+	store := storage.NewFileMock("/tmp/krohobor/storage", nil)
 
 	type args struct {
 		db    database.Interface
@@ -21,17 +21,17 @@ func TestNewDumpCreate(t *testing.T) {
 		args args
 		want *DumpCreate
 	}{
-		 {
-		 	 name: "Test",
-		 	 args: args{
-		 	 	 db: db,
-		 	 	 store: store,
-			 },
-			 want: &DumpCreate{
-				 db: db,
-				 store: store,
-			 },
-		 },
+		{
+			name: "Test",
+			args: args{
+				db:    db,
+				store: store,
+			},
+			want: &DumpCreate{
+				db:    db,
+				store: store,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,12 +68,12 @@ func TestDumpCreate_Execute(t *testing.T) {
 		{
 			name: "Create dump for one database without arch - successful",
 			fields: fields{
-				db: db,
+				db:    db,
 				store: store,
-		    },
+			},
 			args: args{
 				request: DumpCreateRequest{
-					DbNames: []string{"test1"},
+					DbNames:  []string{"test1"},
 					Filename: "test",
 				},
 			},
@@ -82,12 +82,12 @@ func TestDumpCreate_Execute(t *testing.T) {
 		{
 			name: "Create dump for one database with arch - successful",
 			fields: fields{
-				db: db,
+				db:    db,
 				store: storeWithArch,
 			},
 			args: args{
 				request: DumpCreateRequest{
-					DbNames: []string{"test1"},
+					DbNames:  []string{"test1"},
 					Filename: "test",
 				},
 			},
@@ -96,12 +96,12 @@ func TestDumpCreate_Execute(t *testing.T) {
 		{
 			name: "Create dump for all databases without arch - successful",
 			fields: fields{
-				db: db,
+				db:    db,
 				store: store,
 			},
 			args: args{
 				request: DumpCreateRequest{
-					DbNames: []string{},
+					DbNames:  []string{},
 					Filename: "test-all",
 				},
 			},
@@ -110,12 +110,12 @@ func TestDumpCreate_Execute(t *testing.T) {
 		{
 			name: "Create dump for all databases with arch - successful",
 			fields: fields{
-				db: db,
+				db:    db,
 				store: storeWithArch,
 			},
 			args: args{
 				request: DumpCreateRequest{
-					DbNames: []string{},
+					DbNames:  []string{},
 					Filename: "test-all",
 				},
 			},

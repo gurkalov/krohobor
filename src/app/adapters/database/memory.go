@@ -59,7 +59,7 @@ func (m Memory) Dump(dbname, filename string) error {
 func (m Memory) DumpAll(filename string) error {
 	sql := []byte("")
 	for _, v := range m.list {
-		sql = append(sql, []byte("CREATE DATABASE " + v.Name + ";")...)
+		sql = append(sql, []byte("CREATE DATABASE "+v.Name+";")...)
 	}
 
 	if err := ioutil.WriteFile(filename, sql, 0644); err != nil {
@@ -93,8 +93,8 @@ func (m Memory) Drop(dbname string) error {
 func (m Memory) Tables(dbname string) ([]domain.Table, error) {
 	list := []domain.Table{
 		{
-			Name: "table1",
-			Size: 10000,
+			Name:  "table1",
+			Size:  10000,
 			Count: 0,
 		},
 	}

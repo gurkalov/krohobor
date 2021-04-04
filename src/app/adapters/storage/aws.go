@@ -20,14 +20,14 @@ import (
 type AwsS3 struct {
 	bucket  string
 	archive archive.Interface
-	client *s3.Client
+	client  *s3.Client
 }
 
 func NewAwsS3(cfg config.AwsS3Config, arch archive.Interface) AwsS3 {
 	conf, err := external.LoadDefaultAWSConfig(
 		external.WithRegion(cfg.Region),
 		external.WithCredentialsValue(aws.Credentials{
-			AccessKeyID: cfg.KeyId,
+			AccessKeyID:     cfg.KeyId,
 			SecretAccessKey: cfg.AccessKey,
 		}),
 	)
@@ -72,9 +72,15 @@ func NewAwsS3Test(bucket string, arch archive.Interface) AwsS3 {
 	if err := ioutil.WriteFile("/tmp/file2", d1, 0644); err != nil {
 		panic(err)
 	}
+	if err := ioutil.WriteFile("/tmp/file3", d1, 0644); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile("/tmp/file4", d1, 0644); err != nil {
+		panic(err)
+	}
 
-	_ = awsS3.Write("/tmp/file1")
-	_ = awsS3.Write("/tmp/file2")
+	_ = awsS3.Write("file1")
+	_ = awsS3.Write("file2")
 
 	return awsS3
 }
@@ -102,7 +108,7 @@ func (s AwsS3) Check() error {
 }
 
 func (s AwsS3) Filename(filename string) string {
-	return filename
+	return "/tmp/" + filename
 }
 
 func (s AwsS3) Read(filename string) (string, error) {
@@ -110,7 +116,7 @@ func (s AwsS3) Read(filename string) (string, error) {
 		filename = filename + s.archive.Ext()
 	}
 
-	fileParam := "/tmp/" + filepath.Base(filename)
+	fileParam := s.Filename(filepath.Base(filename))
 
 	file, err := os.Create(fileParam)
 	if err != nil {
@@ -141,15 +147,17 @@ func (s AwsS3) Read(filename string) (string, error) {
 }
 
 func (s AwsS3) Write(filename string) error {
+	filename = s.Filename(filename)
+	fname := filename
 	if s.archive != nil {
-		archFile := filename + s.archive.Ext()
-		if err := s.archive.Archive(archFile, filename); err != nil {
+		archFile := fname + s.archive.Ext()
+		if err := s.archive.Archive(archFile, fname); err != nil {
 			return err
 		}
-		filename = archFile
+		fname = archFile
 	}
 
-	file, err := os.Open(filename)
+	file, err := os.Open(fname)
 	if err != nil {
 		return err
 	}
@@ -157,7 +165,7 @@ func (s AwsS3) Write(filename string) error {
 
 	readLogger := NewReadLogger(file, s.client.Config.Logger)
 
-	key := filepath.Base(filename)
+	key := filepath.Base(fname)
 
 	uploader := s3manager.NewUploader(s.client.Config)
 	_, err = uploader.Upload(&s3manager.UploadInput{
@@ -169,8 +177,20 @@ func (s AwsS3) Write(filename string) error {
 		u.RequestOptions = append(u.RequestOptions, func(r *aws.Request) {
 		})
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	if err := os.Remove(filename); err != nil {
+		return err
+	}
+	if s.archive != nil {
+		if err := os.Remove(fname); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s AwsS3) Delete(filename string) error {
@@ -186,6 +206,15 @@ func (s AwsS3) Delete(filename string) error {
 	_, err := req.Send(context.TODO())
 
 	return err
+}
+
+func (s AwsS3) Clean(filename string) error {
+	if s.archive != nil {
+		if err := os.Remove(filename + s.archive.Ext()); err != nil {
+			// do nothing
+		}
+	}
+	return os.Remove(filename)
 }
 
 func (s AwsS3) List() ([]string, error) {

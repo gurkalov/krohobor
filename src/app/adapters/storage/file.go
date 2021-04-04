@@ -9,7 +9,7 @@ import (
 )
 
 type File struct {
-	dir string
+	dir     string
 	archive archive.Interface
 }
 
@@ -27,11 +27,11 @@ func NewFileMock(dir string, arch archive.Interface) File {
 	}
 
 	d1 := []byte("hello")
-	if err := ioutil.WriteFile(dir + "/file1.txt", d1, 0644); err != nil {
+	if err := ioutil.WriteFile(dir+"/file1.txt", d1, 0644); err != nil {
 		panic(err)
 	}
 
-	if err := ioutil.WriteFile(dir + "/file2.txt", d1, 0644); err != nil {
+	if err := ioutil.WriteFile(dir+"/file2.txt", d1, 0644); err != nil {
 		panic(err)
 	}
 
@@ -83,12 +83,13 @@ func (s File) Read(filename string) (string, error) {
 }
 
 func (s File) Write(filename string) error {
+	filename = s.Filename(filename)
 	if s.archive != nil {
 		archFile := filename + s.archive.Ext()
-		return s.archive.Archive(s.dir + "/" + archFile, s.dir + "/" + filename)
+		return s.archive.Archive(archFile, filename)
 	}
 
-	if _, err := os.Stat(s.dir + "/" + filename); err != nil {
+	if _, err := os.Stat(filename); err != nil {
 		return err
 	}
 
@@ -96,7 +97,16 @@ func (s File) Write(filename string) error {
 }
 
 func (s File) Delete(filename string) error {
-	return os.RemoveAll(s.dir + "/" + filename)
+	return os.Remove(s.dir + "/" + filename)
+}
+
+func (s File) Clean(filename string) error {
+	if s.archive != nil {
+		if err := os.Remove(filename + s.archive.Ext()); err != nil {
+			// do nothing
+		}
+	}
+	return os.Remove(filename)
 }
 
 func (s File) List() ([]string, error) {

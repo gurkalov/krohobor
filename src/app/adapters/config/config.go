@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	App AppConfig
+	App       AppConfig
 	Databases []DatabaseConfig
 	Storages  []StorageConfig
 }
 
 type AppConfig struct {
 	Port     int
+	Dir      string
 	Password string
 	Database string
 	Storage  string
@@ -37,19 +38,19 @@ type AwsS3Config struct {
 }
 
 type FileConfig struct {
-	Catalog   string
+	Catalog string
 }
 
 type DatabaseConfig struct {
-	Name     string
-	Driver   string
-	Options  map[string]interface{}
+	Name    string
+	Driver  string
+	Options map[string]interface{}
 }
 
 type StorageConfig struct {
-	Name     string
-	Driver   string
-	Options  map[string]interface{}
+	Name    string
+	Driver  string
+	Options map[string]interface{}
 }
 
 func Load(filename string) Config {

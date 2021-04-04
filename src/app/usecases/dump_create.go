@@ -15,7 +15,7 @@ type DumpCreate struct {
 }
 
 type DumpCreateRequest struct {
-	DbNames []string
+	DbNames  []string
 	Filename string
 }
 
