@@ -3,15 +3,17 @@ package actions
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
+	"krohobor/app/adapters/config"
 	"krohobor/app/usecases"
 	"strings"
+	"time"
 )
 
 type DumpCreate struct {
 	UseCase usecases.DumpCreateInterface
 }
 
-func (d DumpCreate) Action(c *cli.Context) error {
+func (d DumpCreate) Action(c *cli.Context, cfg config.AppConfig) error {
 	dbs := c.String("dbname")
 
 	var dbNames []string
@@ -21,7 +23,7 @@ func (d DumpCreate) Action(c *cli.Context) error {
 		dbs = "all"
 	}
 
-	filename := fmt.Sprintf("%s.sql", dbs)
+	filename := fmt.Sprintf("%s_%s.sql", dbs, time.Now().Format(cfg.Format))
 
 	request := usecases.DumpCreateRequest{
 		DbNames:  dbNames,

@@ -179,7 +179,7 @@ func App(cfg config.Config) *cli.App {
 					Action: func(c *cli.Context) error {
 						return (actions.DumpCreate{
 							UseCase: usecases.NewDumpCreate(db, store),
-						}).Action(c)
+						}).Action(c, cfg.App)
 					},
 				},
 				{

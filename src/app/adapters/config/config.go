@@ -17,6 +17,7 @@ type Config struct {
 type AppConfig struct {
 	Port     int
 	Dir      string
+	Format   string
 	Password string
 	Database string
 	Storage  string

@@ -1,6 +1,7 @@
 app:
   port: 9900
   dir: "/tmp"
+  format: "20060102_150405"
   password: ""
   database: "postgres-source"
   storage: "krohobor-backup"
