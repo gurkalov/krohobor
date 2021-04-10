@@ -1,0 +1,17 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build & Push krohobor to dockerhub
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: gurkalov/krohobor
+          tags: ${{ github.sha }}
+          dockerfile: Dockerfile
+          username: gurkalov
+          password: ${{ secrets.DOCKER_PASSWORD }}
