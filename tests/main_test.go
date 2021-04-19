@@ -3,63 +3,152 @@ package tests
 import (
 	"github.com/gurkalov/krohobor/tests/command"
 	"github.com/smartystreets/goconvey/convey"
+	"os"
 	"testing"
 )
 
-func TestShowListAndReadSuccess(t *testing.T) {
+func TestMain(m *testing.M) {
+	if err := command.TearDown(); err != nil {
+		panic(err)
+	}
+	exitVal := m.Run()
+
+	os.Exit(exitVal)
+}
+
+func TestFullStorySuccess(t *testing.T) {
 	convey.Convey("Show list", t, func() {
-		_, err := command.Run("db", "list")
-//		convey.So(out, convey.ShouldEqual, "{[{test1 8053251} {test2 8204847} {test3 8204847}]}")
+		out, err := command.Run("db", "list")
 		convey.So(err, convey.ShouldBeNil)
 
-		convey.Convey("Read first", func() {
-			out, err := command.Run("--db=test1", "db", "read")
-			convey.So(out, convey.ShouldEqual, "{[{account1 24576 0} {link 32768 2}]}")
-			convey.So(err, convey.ShouldBeNil)
-		})
-
-		convey.Convey("Read second", func() {
-			out, err := command.Run("--db=test2", "db", "read")
-			convey.So(out, convey.ShouldEqual, "{[{account2 24576 0} {link 32768 2}]}")
-			convey.So(err, convey.ShouldBeNil)
-		})
-
-		convey.Convey("Read third", func() {
-			out, err := command.Run("--db=test3", "db", "read")
-			convey.So(out, convey.ShouldEqual, "{[{account3 24576 0} {link 32768 2}]}")
-			convey.So(err, convey.ShouldBeNil)
+		response, err := command.ToStrings(out)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(response, convey.ShouldResemble, [][]string{
+			{"test1", "8053251"},
+			{"test2", "8053251"},
+			{"test3", "8053251"},
 		})
 	})
-}
 
-func TestDumpAllSuccess(t *testing.T) {
+	convey.Convey("Read first", t, func() {
+		out, err := command.Run("--dbname=test1", "db", "read")
+		convey.So(err, convey.ShouldBeNil)
+
+		response, err := command.ToStrings(out)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(response, convey.ShouldResemble, [][]string{
+			{"account1", "0", "24576"},
+			{"link", "2", "32768"},
+		})
+	})
+
+	convey.Convey("Read second", t, func() {
+		out, err := command.Run("--dbname=test2", "db", "read")
+		convey.So(err, convey.ShouldBeNil)
+
+		response, err := command.ToStrings(out)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(response, convey.ShouldResemble, [][]string{
+			{"account2", "0", "24576"},
+			{"link", "2", "32768"},
+		})
+	})
+
+	convey.Convey("Read third", t, func() {
+		out, err := command.Run("--dbname=test3", "db", "read")
+		convey.So(err, convey.ShouldBeNil)
+
+		response, err := command.ToStrings(out)
+		convey.So(err, convey.ShouldBeNil)
+		convey.So(response, convey.ShouldResemble, [][]string{
+			{"account3", "0", "24576"},
+			{"link", "2", "32768"},
+		})
+	})
+
 	convey.Convey("Dump all", t, func() {
-		_, err := command.Run("db", "dumpall")
-		//convey.So(out, convey.ShouldEqual, "{[{test1 8204847} {test2 8204847} {test3 8204847}]}")
+		out, err := command.Run( "dump", "create")
 		convey.So(err, convey.ShouldBeNil)
+		convey.So(out, convey.ShouldEqual, "")
 	})
-}
 
-func TestDumpSuccess(t *testing.T) {
 	convey.Convey("Dump database", t, func() {
-		_, err := command.Run("--db=test1", "db", "dump")
-		//convey.So(out, convey.ShouldEqual, "{[{test1 8204847} {test2 8204847} {test3 8204847}]}")
+		out, err := command.Run("--dbname=test1", "dump", "create")
 		convey.So(err, convey.ShouldBeNil)
+		convey.So(out, convey.ShouldEqual, "")
 	})
-}
 
-func TestBackupListSuccess(t *testing.T) {
-	convey.Convey("Backup all", t, func() {
-		_, err := command.Run("backup", "list")
-		//convey.So(out, convey.ShouldEqual, "{[{test1 8204847} {test2 8204847} {test3 8204847}]}")
+	convey.Convey("Dump list", t, func() {
+		out, err := command.Run("dump", "list")
 		convey.So(err, convey.ShouldBeNil)
-	})
-}
 
-func TestRestoreSuccess(t *testing.T) {
-	convey.Convey("Restore all", t, func() {
-		_, err := command.Run("--name=test1.sql", "db", "restore")
-		//convey.So(out, convey.ShouldEqual, "{[{test1 8204847} {test2 8204847} {test3 8204847}]}")
+		response, err := command.ToStrings(out)
 		convey.So(err, convey.ShouldBeNil)
+		convey.So(response, convey.ShouldResemble, [][]string{
+			{response[0][0]},
+			{response[1][0]},
+		})
+
+		convey.Convey("Restore all", func() {
+			out, err := command.Run("--name=" + response[0][0], "--database=postgres-target", "dump", "restore")
+			convey.So(out, convey.ShouldEqual, "")
+			convey.So(err, convey.ShouldBeNil)
+
+			convey.Convey("Show target list", func() {
+				out, err := command.Run("--database=postgres-target", "db", "list")
+				convey.So(err, convey.ShouldBeNil)
+
+				responseList, err := command.ToStrings(out)
+				convey.So(err, convey.ShouldBeNil)
+				convey.So(responseList, convey.ShouldResemble, [][]string{
+					{"test1", "8204847"},
+					{"test2", "8204847"},
+					{"test3", "8204847"},
+				})
+
+				convey.Convey("Create new db", func() {
+					out, err := command.Run("--database=postgres-target", "--dbname=test1_new", "db", "create")
+					convey.So(out, convey.ShouldEqual, "")
+					convey.So(err, convey.ShouldBeNil)
+
+					convey.Convey("Restore one", func() {
+						out, err := command.Run("--name="+response[1][0], "--database=postgres-target", "--dbname=test1_new", "dump", "restore")
+						convey.So(out, convey.ShouldEqual, "")
+						convey.So(err, convey.ShouldBeNil)
+
+						convey.Convey("Read db one", func() {
+							out, err := command.Run("--dbname=test1_new", "--database=postgres-target", "db", "read")
+							convey.So(err, convey.ShouldBeNil)
+
+							response, err := command.ToStrings(out)
+							convey.So(err, convey.ShouldBeNil)
+							convey.So(response, convey.ShouldResemble, [][]string{
+								{"account1", "0", "24576"},
+								{"link", "2", "32768"},
+							})
+
+							convey.Convey("Delete db one", func() {
+								out, err := command.Run("--dbname=test2", "--database=postgres-target", "db", "delete")
+								convey.So(out, convey.ShouldEqual, "")
+								convey.So(err, convey.ShouldBeNil)
+
+								convey.Convey("Show target list", func() {
+									out, err := command.Run("--database=postgres-target", "db", "list")
+									convey.So(err, convey.ShouldBeNil)
+
+									responseList, err := command.ToStrings(out)
+									convey.So(err, convey.ShouldBeNil)
+									convey.So(responseList, convey.ShouldResemble, [][]string{
+										{"test1", "8204847"},
+										{"test3", "8204847"},
+										{"test1_new", "8204847"},
+									})
+								})
+							})
+						})
+					})
+				})
+			})
+		})
 	})
 }

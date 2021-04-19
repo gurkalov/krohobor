@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"krohobor/app/adapters/config"
+	"krohobor/app/adapters/presenter/tsv"
 	"krohobor/app/usecases"
 	"strings"
 	"time"
@@ -36,7 +37,6 @@ func (d DumpCreate) Action(c *cli.Context, cfg config.AppConfig) error {
 		return err
 	}
 
-	fmt.Println(resp)
-
-	return nil
+	pr := tsv.Presenter{}
+	return pr.Print(resp)
 }

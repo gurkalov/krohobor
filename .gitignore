@@ -1,5 +1,4 @@
 src/config.yaml
 .idea/
-*.sql
 src/krohobor
 .env

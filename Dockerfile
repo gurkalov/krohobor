@@ -23,8 +23,9 @@ RUN apt-get update
 
 RUN apt-get install -y postgresql-client-13 zip
 
-WORKDIR /root/
+WORKDIR /root
 
 RUN mkdir /tmp/backup
 
 COPY --from=builder /go/bin/krohobor .
+RUN ln -s /root/krohobor /usr/bin/krohobor

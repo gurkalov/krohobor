@@ -3,6 +3,7 @@ package actions
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
+	"krohobor/app/adapters/presenter/tsv"
 	"krohobor/app/usecases"
 )
 
@@ -21,7 +22,6 @@ func (d DumpDelete) Action(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println(resp)
-
-	return nil
+	pr := tsv.Presenter{}
+	return pr.Print(resp)
 }

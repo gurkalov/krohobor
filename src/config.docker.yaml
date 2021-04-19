@@ -1,0 +1,36 @@
+app:
+  port: 9900
+  dir: "/tmp"
+  format: "20060102_150405"
+  password: "TesTPassWord"
+  database: "postgres-source"
+  storage: "local"
+
+storages:
+  - name: "local"
+    driver: "file"
+    options:
+      catalog: "/tmp/backup"
+
+databases:
+  - name: "postgres-source"
+    driver: "postgres"
+    options:
+      host: "postgres-source"
+      port: 5432
+      db: "postgres"
+      user: "postgres"
+      password: "passDb"
+
+  - name: "postgres-target"
+    driver: "postgres"
+    options:
+      host: "postgres-target"
+      port: 5432
+      db: "postgres"
+      user: "postgres"
+      password: "passDb"
+
+  - name: "local"
+    driver: "memory"
+    options: []
