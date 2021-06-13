@@ -33,8 +33,9 @@ func (p Postgres) Check() error {
 
 func (p Postgres) List() ([]domain.Database, error) {
 	var list []domain.Database
+	selectSql := "SELECT datname, pg_database_size(datname) FROM pg_database WHERE datname NOT IN ('postgres', 'template0', 'template1', 'template2');"
 	stdout, err := p.cmd(p.cfg, "psql", "-t", "-A", `-F","`,
-		"-c", "SELECT datname, pg_database_size(datname) FROM pg_database WHERE datname NOT IN ('postgres', 'template0', 'template1', 'template2');")
+		"-c", selectSql, p.cfg.DB)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return list, errors.New(string(execErr.Stderr))
