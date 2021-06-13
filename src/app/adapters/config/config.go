@@ -65,7 +65,6 @@ func Load(filename string) Config {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		port, _ := strconv.Atoi(os.Getenv("APP_PORT"))
 		cfg.App.Port = port
-		cfg.App.Password = os.Getenv("APP_PASSWORD")
 	}
 
 	return cfg

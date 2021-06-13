@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"krohobor/app/adapters/config"
 	"krohobor/app/gateways/cli"
 	"log"
@@ -9,8 +8,12 @@ import (
 )
 
 func main() {
-	configFile := flag.String("config", "config.yaml", "a string")
-	cfg := config.Load(*configFile)
+	configFile := os.Getenv("KROHOBOR_CONFIG")
+	if configFile == "" {
+		configFile = "config.yaml"
+	}
+
+	cfg := config.Load(configFile)
 
 	app := cli.App(cfg)
 	err := app.Run(os.Args)
