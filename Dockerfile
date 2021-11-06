@@ -17,11 +17,11 @@ FROM ubuntu:20.04
 RUN apt-get update
 RUN apt-get install -y wget gnupg2
 
-RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list
-RUN apt-get update
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+RUN apt-get -y update
 
-RUN apt-get install -y postgresql-client-13 zip
+RUN apt-get install -y postgresql-client-14 zip
 
 WORKDIR /root
 
