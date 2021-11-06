@@ -1,3 +1,15 @@
+Install
+
+```sh
+cp .env.example .env
+cp src/config.yaml.example src/config.yaml
+```
+
+Build image
+```sh
+make build
+```
+
 Create user with grants
 ```sql
 CREATE USER appuser WITH LOGIN PASSWORD '123456';
