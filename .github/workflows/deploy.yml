@@ -88,6 +88,11 @@ jobs:
         with:
           username: gurkalov
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Set tag
+        id: tag
+        run: echo "::set-output name=tag::$(git tag -l --points-at HEAD | cut -d "v" -f 2)"
+      - name: Check tag
+        run: echo ${{ steps.tag.outputs.tag }}
       - name: Push image
         run: |
           docker image tag gurkalov/krohobor:latest gurkalov/krohobor:${{ github.sha }}
