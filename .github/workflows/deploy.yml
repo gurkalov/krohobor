@@ -66,6 +66,12 @@ jobs:
     needs: [image_test]
     if: github.ref == 'refs/heads/master'
     steps:
+      - uses: actions/checkout@v2
+      - name: Set tag
+        id: tag
+        run: echo "::set-output name=tag::$(git tag -l --points-at HEAD | cut -d "v" -f 2)"
+      - name: Check tag
+        run: echo ${{ steps.tag.outputs.tag }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Download image artifact
@@ -85,4 +91,5 @@ jobs:
       - name: Push image
         run: |
           docker image tag gurkalov/krohobor:latest gurkalov/krohobor:${{ github.sha }}
+          if [ ! -z "${{ steps.tag.outputs.tag }}" ]; then docker image tag gurkalov/krohobor:latest gurkalov/krohobor:${{ steps.tag.outputs.tag }}; fi
           docker image push --all-tags gurkalov/krohobor
