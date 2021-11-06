@@ -67,7 +67,7 @@ func TestFullStorySuccess(t *testing.T) {
 	})
 
 	convey.Convey("Dump all", t, func() {
-		out, err := command.Run( "dump", "create")
+		out, err := command.Run("dump", "create")
 		convey.So(err, convey.ShouldBeNil)
 		convey.So(out, convey.ShouldEqual, "")
 	})
@@ -90,7 +90,7 @@ func TestFullStorySuccess(t *testing.T) {
 		})
 
 		convey.Convey("Restore all", func() {
-			out, err := command.Run("--name=" + response[0][0], "--database=postgres-target", "dump", "restore")
+			out, err := command.Run("--name="+response[0][0], "--database=postgres-target", "dump", "restore")
 			convey.So(out, convey.ShouldEqual, "")
 			convey.So(err, convey.ShouldBeNil)
 

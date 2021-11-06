@@ -10,7 +10,7 @@ type Memory struct {
 	list []domain.Database
 }
 
-func NewMemory() Memory {
+func NewMemory() *Memory {
 	list := []domain.Database{
 		{
 			Name: "test1",
@@ -26,18 +26,18 @@ func NewMemory() Memory {
 		},
 	}
 
-	return Memory{list}
+	return &Memory{list}
 }
 
-func (m Memory) Check() error {
+func (m *Memory) Check() error {
 	return nil
 }
 
-func (m Memory) List() ([]domain.Database, error) {
+func (m *Memory) List() ([]domain.Database, error) {
 	return m.list, nil
 }
 
-func (m Memory) CreateDb(dbname string) error {
+func (m *Memory) CreateDb(dbname string) error {
 	db := domain.Database{
 		Name: dbname,
 		Size: 10000,
@@ -47,7 +47,7 @@ func (m Memory) CreateDb(dbname string) error {
 	return nil
 }
 
-func (m Memory) Dump(dbname, filename string) error {
+func (m *Memory) Dump(dbname, filename string) error {
 	sql := []byte("CREATE DATABASE " + dbname + ";")
 	if err := ioutil.WriteFile(filename, sql, 0644); err != nil {
 		return err
@@ -56,7 +56,7 @@ func (m Memory) Dump(dbname, filename string) error {
 	return nil
 }
 
-func (m Memory) DumpAll(filename string) error {
+func (m *Memory) DumpAll(filename string) error {
 	sql := []byte("")
 	for _, v := range m.list {
 		sql = append(sql, []byte("CREATE DATABASE "+v.Name+";")...)
@@ -69,7 +69,7 @@ func (m Memory) DumpAll(filename string) error {
 	return nil
 }
 
-func (m Memory) Restore(filename, dbname string) error {
+func (m *Memory) Restore(filename, dbname string) error {
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return err
@@ -78,7 +78,7 @@ func (m Memory) Restore(filename, dbname string) error {
 	return nil
 }
 
-func (m Memory) Drop(dbname string) error {
+func (m *Memory) Drop(dbname string) error {
 	var newList []domain.Database
 	for _, v := range m.list {
 		if v.Name != dbname {
@@ -90,7 +90,7 @@ func (m Memory) Drop(dbname string) error {
 	return nil
 }
 
-func (m Memory) Tables(dbname string) ([]domain.Table, error) {
+func (m *Memory) Tables(dbname string) ([]domain.Table, error) {
 	list := []domain.Table{
 		{
 			Name:  "table1",
@@ -102,7 +102,7 @@ func (m Memory) Tables(dbname string) ([]domain.Table, error) {
 	return list, nil
 }
 
-func (m Memory) Count(dbname, table string) (int, error) {
+func (m *Memory) Count(dbname, table string) (int, error) {
 
 	return 0, nil
 }

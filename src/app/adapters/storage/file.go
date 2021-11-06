@@ -102,7 +102,7 @@ func (s File) Delete(filename string) error {
 
 func (s File) Clean(filename string) error {
 	if s.archive != nil {
-		if err := os.Remove(filename + s.archive.Ext()); err != nil {
+		if err := os.Remove(filename + s.archive.Ext()); err != nil { // nolint
 			// do nothing
 		}
 	}

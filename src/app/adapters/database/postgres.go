@@ -199,38 +199,25 @@ func (p Postgres) cmd(cfg config.PostgresConfig, name string, arg ...string) ([]
 	return cmd.Output()
 }
 
-func (p Postgres) targetConfig(target string) (config.PostgresConfig, error) {
-	cfg := p.cfg
-	if target == "" {
-		return cfg, nil
-	}
-
-	partTarget := strings.Split(target, ":")
-	if len(partTarget) > 0 {
-		cfg.Host = partTarget[0]
-	}
-	if len(partTarget) > 1 {
-		port, err := strconv.Atoi(partTarget[1])
-		if err != nil {
-			return cfg, err
-		}
-
-		cfg.Port = port
-	}
-
-	return cfg, nil
-}
-
-//func (p Postgres) Info(dbname string) (map[string]int, error) {
-//	result := make(map[string]int, 0)
-//	tables := p.Tables(dbname)
-//	for _, v := range tables {
-//		res, err := p.Count(dbname, v)
-//		if err != nil {
-//			return result, err
-//		}
-//		result[v] = res
+//func (p Postgres) targetConfig(target string) (config.PostgresConfig, error) {
+//	cfg := p.cfg
+//	if target == "" {
+//		return cfg, nil
 //	}
 //
-//	return result, nil
+//	partTarget := strings.Split(target, ":")
+//	if len(partTarget) > 0 {
+//		cfg.Host = partTarget[0]
+//	}
+//	if len(partTarget) > 1 {
+//		port, err := strconv.Atoi(partTarget[1])
+//		if err != nil {
+//			return cfg, err
+//		}
+//
+//		cfg.Port = port
+//	}
+//
+//	return cfg, nil
 //}
+//

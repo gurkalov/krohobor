@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"krohobor/app/adapters/archive"
@@ -17,7 +16,7 @@ func Config(name string, cfg config.Config) (config.StorageConfig, error) {
 		}
 	}
 
-	return storageConfig, errors.New(fmt.Sprintf("Storage %s not found", name))
+	return storageConfig, fmt.Errorf("Storage %s not found", name)
 }
 
 func Impl(storageConfig config.StorageConfig, arch archive.Interface) (Interface, error) {
@@ -26,7 +25,7 @@ func Impl(storageConfig config.StorageConfig, arch archive.Interface) (Interface
 		{
 			var conf config.AwsS3Config
 			if err := mapstructure.Decode(storageConfig.Options, &conf); err != nil {
-				return nil, errors.New(fmt.Sprintf("Storage %s error: %v", storageConfig.Name, err))
+				return nil, fmt.Errorf("Storage %s error: %v", storageConfig.Name, err)
 			}
 			return NewAwsS3(conf, arch), nil
 		}
@@ -34,11 +33,11 @@ func Impl(storageConfig config.StorageConfig, arch archive.Interface) (Interface
 		{
 			var conf config.FileConfig
 			if err := mapstructure.Decode(storageConfig.Options, &conf); err != nil {
-				return nil, errors.New(fmt.Sprintf("Storage %s error: %v", storageConfig.Name, err))
+				return nil, fmt.Errorf("Storage %s error: %v", storageConfig.Name, err)
 			}
 			return NewFile(conf.Catalog, arch), nil
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Storage %s driver %s not found", storageConfig.Name, storageConfig.Driver))
+	return nil, fmt.Errorf("Storage %s driver %s not found", storageConfig.Name, storageConfig.Driver)
 }

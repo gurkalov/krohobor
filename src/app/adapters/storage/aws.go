@@ -57,11 +57,17 @@ func NewAwsS3Test(bucket string, arch archive.Interface) AwsS3 {
 		Bucket: aws.String(bucket),
 	})
 	_, err = reqDelete.Send(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	reqCreate := client.CreateBucketRequest(&s3.CreateBucketInput{
 		Bucket: aws.String(bucket),
 	})
 	_, err = reqCreate.Send(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	awsS3 := AwsS3{bucket, arch, client}
 
@@ -211,7 +217,7 @@ func (s AwsS3) Delete(filename string) error {
 func (s AwsS3) Clean(filename string) error {
 	if s.archive != nil {
 		if err := os.Remove(filename + s.archive.Ext()); err != nil {
-			// do nothing
+			fmt.Println(err)
 		}
 	}
 	return os.Remove(filename)
@@ -274,8 +280,8 @@ func (s *ReadLogger) Seek(offset int64, mode int) (int64, error) {
 		msg += fmt.Sprintf("\n\tStack:\n%s", string(debug.Stack()))
 	}
 
-	//s.logger.Log(msg)
-	return newOffset, err
+	s.logger.Log(msg)
+	return s.reader.Seek(offset, mode)
 }
 
 // Read attempts to read from the reader, returning the bytes read, or error.
