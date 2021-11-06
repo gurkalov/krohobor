@@ -17,6 +17,7 @@ func main() {
 
 	app := cli.App(cfg)
 	err := app.Run(os.Args)
+
 	if err != nil {
 		log.Fatal(err)
 	}
