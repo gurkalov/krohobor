@@ -13,7 +13,8 @@ type DbDelete struct {
 }
 
 type DbDeleteRequest struct {
-	Name string
+	Name  string
+	Force bool
 }
 
 type DbDeleteResponse struct{}
@@ -25,7 +26,7 @@ func NewDbDelete(db database.Interface) *DbDelete {
 func (dl *DbDelete) Execute(request DbDeleteRequest) (DbDeleteResponse, error) {
 	response := DbDeleteResponse{}
 
-	if err := dl.db.Drop(request.Name); err != nil {
+	if err := dl.db.Drop(request.Name, request.Force); err != nil {
 		return response, err
 	}
 

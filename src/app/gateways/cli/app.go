@@ -100,6 +100,11 @@ func App(cfg config.Config) *cli.App {
 			Value: 80,
 			Usage: "Port",
 		},
+		&cli.BoolFlag{
+			Name:  "force",
+			Value: false,
+			Usage: "Force flag",
+		},
 	}
 
 	app.Commands = []*cli.Command{

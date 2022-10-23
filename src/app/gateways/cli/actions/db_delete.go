@@ -13,7 +13,8 @@ type DbDelete struct {
 
 func (d DbDelete) Action(c *cli.Context) error {
 	request := usecases.DbDeleteRequest{
-		Name: c.String("dbname"),
+		Name:  c.String("dbname"),
+		Force: c.Bool("force"),
 	}
 	resp, err := d.UseCase.Execute(request)
 	if err != nil {

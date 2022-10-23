@@ -120,8 +120,14 @@ func (p Postgres) Restore(filename, dbname string) error {
 	return nil
 }
 
-func (p Postgres) Drop(dbname string) error {
-	_, err := p.cmd(p.cfg, "dropdb", dbname)
+func (p Postgres) Drop(dbname string, force bool) error {
+	var err error
+	if force {
+		err = p.forceDrop(dbname)
+	} else {
+		err = p.drop(dbname)
+	}
+
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr))
@@ -130,6 +136,17 @@ func (p Postgres) Drop(dbname string) error {
 	}
 
 	return nil
+}
+
+func (p Postgres) drop(dbname string) error {
+	_, err := p.cmd(p.cfg, "dropdb", dbname)
+	return err
+}
+
+func (p Postgres) forceDrop(dbname string) error {
+	_, err := p.cmd(p.cfg, "psql", "-t", "-A",
+		"-c", fmt.Sprintf("DROP database %s WITH (FORCE);", dbname))
+	return err
 }
 
 func (p Postgres) Tables(dbname string) ([]domain.Table, error) {

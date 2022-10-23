@@ -143,6 +143,24 @@ func TestFullStorySuccess(t *testing.T) {
 										{"test3", "8204847"},
 										{"test1_new", "8204847"},
 									})
+
+									convey.Convey("Delete db one force", func() {
+										out, err := command.Run("--dbname=test3", "--database=postgres-target", "--force=true", "db", "delete")
+										convey.So(out, convey.ShouldEqual, "")
+										convey.So(err, convey.ShouldBeNil)
+
+										convey.Convey("Show target list", func() {
+											out, err := command.Run("--database=postgres-target", "db", "list")
+											convey.So(err, convey.ShouldBeNil)
+
+											responseList, err := command.ToStrings(out)
+											convey.So(err, convey.ShouldBeNil)
+											convey.So(responseList, convey.ShouldResemble, [][]string{
+												{"test1", "8204847"},
+												{"test1_new", "8204847"},
+											})
+										})
+									})
 								})
 							})
 						})

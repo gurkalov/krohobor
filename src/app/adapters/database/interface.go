@@ -12,6 +12,6 @@ type Interface interface {
 	CreateDb(string) error
 	Dump(string, string) error
 	DumpAll(string) error
-	Drop(dbname string) error
+	Drop(dbname string, force bool) error
 	Restore(filename, dbname string) error
 }

@@ -78,7 +78,7 @@ func (m *Memory) Restore(filename, dbname string) error {
 	return nil
 }
 
-func (m *Memory) Drop(dbname string) error {
+func (m *Memory) Drop(dbname string, force bool) error {
 	var newList []domain.Database
 	for _, v := range m.list {
 		if v.Name != dbname {
