@@ -82,13 +82,8 @@ jobs:
         with:
           username: gurkalov
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Set tag
-        id: tag
-        run: echo "::set-output name=tag::$(git tag -l --points-at HEAD | cut -d "v" -f 2)"
-      - name: Check tag
-        run: echo ${{ steps.tag.outputs.tag }}
       - name: Push image
         run: |
           docker image tag gurkalov/krohobor:latest gurkalov/krohobor:${{ github.sha }}
-          if [ ! -z "${{ steps.tag.outputs.tag }}" ]; then docker image tag gurkalov/krohobor:latest gurkalov/krohobor:${{ steps.tag.outputs.tag }}; fi
+          if [ ! -z "${{ github.ref_name }}" ]; then docker image tag gurkalov/krohobor:latest gurkalov/krohobor:${{ github.ref_name }}; fi
           docker image push --all-tags gurkalov/krohobor
