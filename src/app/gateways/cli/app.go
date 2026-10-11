@@ -190,7 +190,7 @@ func App(cfg config.Config) *cli.App {
 					Action: func(c *cli.Context) error {
 						// Track the progress of loading the dump to S3 storage.
 						if s3store, ok := store.(*storage.AwsS3); ok {
-							s3store.SetProgress(actions.S3ProgressPrinter())
+							s3store.SetProgress(actions.S3ProgressPrinter("Uploading"))
 						}
 						return (actions.DumpCreate{
 							UseCase: usecases.NewDumpCreate(db, store),
@@ -216,6 +216,10 @@ func App(cfg config.Config) *cli.App {
 					Name:  "restore",
 					Usage: "restore dump",
 					Action: func(c *cli.Context) error {
+						// Track the progress of downloading the dump from S3 storage.
+						if s3store, ok := store.(*storage.AwsS3); ok {
+							s3store.SetProgress(actions.S3ProgressPrinter("Downloading"))
+						}
 						return (actions.DumpRestore{
 							UseCase: usecases.NewDumpRestore(db, store),
 						}).Action(c)

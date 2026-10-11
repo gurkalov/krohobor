@@ -48,7 +48,8 @@ func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) *AwsS3 {
 	return &AwsS3{bucket: cfg.Catalog, archive: arch, client: client}
 }
 
-// SetProgress registers a callback invoked as a dump is uploaded to S3.
+// SetProgress registers a callback invoked while a dump is uploaded to or
+// downloaded from S3.
 func (s *AwsS3) SetProgress(p func(done, total int)) {
 	s.progress = p
 }
@@ -132,7 +133,16 @@ func (s AwsS3) Read(filename string) (string, error) {
 	}
 	defer obj.Body.Close()
 
-	if _, err = io.Copy(file, obj.Body); err != nil {
+	body := io.Reader(obj.Body)
+	if s.progress != nil {
+		total := 0
+		if obj.ContentLength != nil {
+			total = int(*obj.ContentLength)
+		}
+		body = &downloadProgressReader{r: obj.Body, total: total, cb: s.progress}
+	}
+
+	if _, err = io.Copy(file, body); err != nil {
 		return "", err
 	}
 
@@ -247,6 +257,26 @@ func (s AwsS3) List() ([]domain.Dump, error) {
 	}
 
 	return out, nil
+}
+
+// downloadProgressReader wraps an io.Reader and reports bytes read to a callback.
+type downloadProgressReader struct {
+	r     io.Reader
+	done  int
+	total int
+	cb    func(done, total int)
+}
+
+func (p *downloadProgressReader) Read(b []byte) (int, error) {
+	n, err := p.r.Read(b)
+	p.done += n
+	if p.done > p.total {
+		p.done = p.total
+	}
+	if p.cb != nil {
+		p.cb(p.done, p.total)
+	}
+	return n, err
 }
 
 // progressReader wraps an io.Reader and reports bytes read to a callback.

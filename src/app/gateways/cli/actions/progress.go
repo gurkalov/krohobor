@@ -5,9 +5,9 @@ import (
 	"os"
 )
 
-// S3ProgressPrinter returns a callback that renders an upload progress bar
-// to stderr. It is used to track the progress of loading a dump to S3 storage.
-func S3ProgressPrinter() func(done, total int) {
+// S3ProgressPrinter returns a callback that renders a progress bar to stderr.
+// label describes the operation, e.g. "Uploading" or "Downloading".
+func S3ProgressPrinter(label string) func(done, total int) {
 	const width = 30
 	last := -1
 	finished := false
@@ -27,7 +27,7 @@ func S3ProgressPrinter() func(done, total int) {
 					bar[i] = '.'
 				}
 			}
-			fmt.Fprintf(os.Stderr, "\rUploading: [%s] %5.1f%%", string(bar), pct*100)
+			fmt.Fprintf(os.Stderr, "\r%s: [%s] %5.1f%%", label, string(bar), pct*100)
 		}
 		if done >= total && !finished {
 			finished = true
