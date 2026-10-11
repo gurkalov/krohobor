@@ -11,6 +11,7 @@ import (
 	"krohobor/app/usecases"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func UseDatabase(name string, cfg config.Config) (database.Interface, error) {
@@ -216,6 +217,9 @@ func App(cfg config.Config) *cli.App {
 					Name:  "restore",
 					Usage: "restore dump",
 					Action: func(c *cli.Context) error {
+						start := time.Now()
+						actions.LogRestoreStart()
+
 						// Track the progress of downloading the dump from S3 storage
 						// and log the download and unarchive between the steps.
 						if s3store, ok := store.(*storage.AwsS3); ok {
@@ -227,9 +231,13 @@ func App(cfg config.Config) *cli.App {
 						if pgdb, ok := db.(*database.Postgres); ok {
 							pgdb.SetProgress(actions.ProgressPrinter("Restoring"))
 						}
-						return (actions.DumpRestore{
+
+						err := (actions.DumpRestore{
 							UseCase: usecases.NewDumpRestore(db, store),
 						}).Action(c)
+
+						actions.LogRestoreFinished(time.Since(start))
+						return err
 					},
 				},
 				{

@@ -38,14 +38,27 @@ func ProgressPrinter(label string) func(done, total int) {
 	}
 }
 
+const logTimeLayout = "2006-01-02 15:04:05"
+
+// LogRestoreStart logs the start of the dump restore, before the download.
+func LogRestoreStart() {
+	fmt.Fprintf(os.Stderr, "%s  Restore started\n", time.Now().Format(logTimeLayout))
+}
+
+// LogRestoreFinished logs the finish of the dump restore: the current time and
+// the total elapsed time (download + unarchive + restore).
+func LogRestoreFinished(duration time.Duration) {
+	fmt.Fprintf(os.Stderr, "%s  Restore finished in %s\n", time.Now().Format(logTimeLayout), duration.Round(time.Millisecond))
+}
+
 // LogDownloadComplete logs the finish of the S3 download between the download
 // and restore steps: the current time and the total bytes downloaded.
 func LogDownloadComplete(size int) {
-	fmt.Fprintf(os.Stderr, "%s  Downloaded %s\n", time.Now().Format("2006-01-02 15:04:05"), tsv.HumanSize(size))
+	fmt.Fprintf(os.Stderr, "%s  Downloaded %s\n", time.Now().Format(logTimeLayout), tsv.HumanSize(size))
 }
 
 // LogUnarchiveComplete logs the finish of extracting the downloaded archive:
 // the current time, the unarchived size and the time it took.
 func LogUnarchiveComplete(size int, duration time.Duration) {
-	fmt.Fprintf(os.Stderr, "%s  Unzipped %s in %s\n", time.Now().Format("2006-01-02 15:04:05"), tsv.HumanSize(size), duration.Round(time.Millisecond))
+	fmt.Fprintf(os.Stderr, "%s  Unzipped %s in %s\n", time.Now().Format(logTimeLayout), tsv.HumanSize(size), duration.Round(time.Millisecond))
 }
