@@ -1,8 +1,10 @@
 package database
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"krohobor/app/adapters/config"
 	"krohobor/app/domain"
 	"os"
@@ -12,11 +14,17 @@ import (
 )
 
 type Postgres struct {
-	cfg config.PostgresConfig
+	cfg      config.PostgresConfig
+	progress func(done, total int)
 }
 
-func NewPostgres(cfg config.PostgresConfig) Postgres {
-	return Postgres{cfg}
+func NewPostgres(cfg config.PostgresConfig) *Postgres {
+	return &Postgres{cfg: cfg}
+}
+
+// SetProgress registers a callback invoked while a dump is restored via psql.
+func (p *Postgres) SetProgress(fn func(done, total int)) {
+	p.progress = fn
 }
 
 func (p Postgres) Check() error {
@@ -109,10 +117,85 @@ func (p Postgres) Restore(filename, dbname string) error {
 		return err
 	}
 
+	if p.progress != nil {
+		return p.restoreWithProgress(filename, dbname)
+	}
+
 	out, err := p.cmd(p.cfg, "psql", "-f", filename, dbname)
 	if err != nil {
 		if execErr, ok := err.(*exec.ExitError); ok {
 			return errors.New(string(execErr.Stderr) + ":" + string(out))
+		}
+		return err
+	}
+
+	return nil
+}
+
+// restoreWithProgress restores a dump by streaming it to psql over stdin
+// (byte-identical to "psql -f <file>") and reports the number of bytes sent.
+func (p *Postgres) restoreWithProgress(filename, dbname string) error {
+	info, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+	total := int(info.Size())
+
+	c := exec.Command("psql", dbname,
+		"-h", p.cfg.Host, "-U", p.cfg.User, "-p", strconv.Itoa(p.cfg.Port))
+	c.Env = append(os.Environ(), "PGPASSWORD="+p.cfg.Password)
+
+	var out, errOut bytes.Buffer
+	c.Stdout = &out
+	c.Stderr = &errOut
+
+	pipe, err := c.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	if err := c.Start(); err != nil {
+		return err
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		pipe.Close()
+		c.Wait()
+		return err
+	}
+
+	buf := make([]byte, 256*1024)
+	var done int
+	for {
+		n, rerr := f.Read(buf)
+		if n > 0 {
+			if _, err := pipe.Write(buf[:n]); err != nil {
+				f.Close()
+				pipe.Close()
+				c.Wait()
+				return err
+			}
+			done += n
+			p.progress(done, total)
+		}
+		if rerr == io.EOF {
+			break
+		}
+		if rerr != nil {
+			f.Close()
+			pipe.Close()
+			c.Wait()
+			return rerr
+		}
+	}
+
+	f.Close()
+	pipe.Close()
+
+	if err := c.Wait(); err != nil {
+		if _, ok := err.(*exec.ExitError); ok {
+			return errors.New(errOut.String() + ":" + out.String())
 		}
 		return err
 	}

@@ -5,9 +5,9 @@ import (
 	"os"
 )
 
-// S3ProgressPrinter returns a callback that renders a progress bar to stderr.
+// ProgressPrinter returns a callback that renders a progress bar to stderr.
 // label describes the operation, e.g. "Uploading" or "Downloading".
-func S3ProgressPrinter(label string) func(done, total int) {
+func ProgressPrinter(label string) func(done, total int) {
 	const width = 30
 	last := -1
 	finished := false
