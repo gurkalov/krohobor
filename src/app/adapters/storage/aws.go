@@ -10,6 +10,7 @@ import (
 	"krohobor/app/domain"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -19,10 +20,12 @@ import (
 )
 
 type AwsS3 struct {
-	bucket   string
-	archive  archive.Interface
-	client   *s3.Client
-	progress func(done, total int)
+	bucket       string
+	archive      archive.Interface
+	client       *s3.Client
+	progress     func(done, total int)
+	onDownloaded func(size int)
+	onUnarchived func(size int, duration time.Duration)
 }
 
 func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) *AwsS3 {
@@ -52,6 +55,18 @@ func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) *AwsS3 {
 // downloaded from S3.
 func (s *AwsS3) SetProgress(p func(done, total int)) {
 	s.progress = p
+}
+
+// SetOnDownloaded registers a callback invoked after a dump is downloaded
+// from S3, with the number of bytes downloaded.
+func (s *AwsS3) SetOnDownloaded(fn func(size int)) {
+	s.onDownloaded = fn
+}
+
+// SetOnUnarchived registers a callback invoked after a downloaded archive is
+// extracted, with the size of the unarchived file and the time it took.
+func (s *AwsS3) SetOnUnarchived(fn func(size int, duration time.Duration)) {
+	s.onUnarchived = fn
 }
 
 func (s AwsS3) Check() error {
@@ -146,12 +161,28 @@ func (s AwsS3) Read(filename string) (string, error) {
 		return "", err
 	}
 
+	if s.onDownloaded != nil {
+		size := 0
+		if info, statErr := file.Stat(); statErr == nil {
+			size = int(info.Size())
+		}
+		s.onDownloaded(size)
+	}
+
 	if s.archive != nil {
-		if file, err := s.archive.Unarchive(fileParam); err == nil {
-			return file, err
-		} else {
+		start := time.Now()
+		file, err := s.archive.Unarchive(fileParam)
+		if err != nil {
 			return "", err
 		}
+		if s.onUnarchived != nil {
+			size := 0
+			if info, statErr := os.Stat(file); statErr == nil {
+				size = int(info.Size())
+			}
+			s.onUnarchived(size, time.Since(start))
+		}
+		return file, nil
 	}
 
 	return fileParam, nil

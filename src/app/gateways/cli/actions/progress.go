@@ -43,3 +43,9 @@ func ProgressPrinter(label string) func(done, total int) {
 func LogDownloadComplete(size int) {
 	fmt.Fprintf(os.Stderr, "%s  Downloaded %s\n", time.Now().Format("2006-01-02 15:04:05"), tsv.HumanSize(size))
 }
+
+// LogUnarchiveComplete logs the finish of extracting the downloaded archive:
+// the current time, the unarchived size and the time it took.
+func LogUnarchiveComplete(size int, duration time.Duration) {
+	fmt.Fprintf(os.Stderr, "%s  Unzipped %s in %s\n", time.Now().Format("2006-01-02 15:04:05"), tsv.HumanSize(size), duration.Round(time.Millisecond))
+}

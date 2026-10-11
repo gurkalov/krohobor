@@ -216,32 +216,19 @@ func App(cfg config.Config) *cli.App {
 					Name:  "restore",
 					Usage: "restore dump",
 					Action: func(c *cli.Context) error {
-						// Track the progress of downloading the dump from S3 storage.
-						var downloadedBytes int
+						// Track the progress of downloading the dump from S3 storage
+						// and log the download and unarchive between the steps.
 						if s3store, ok := store.(*storage.AwsS3); ok {
-							printer := actions.ProgressPrinter("Downloading")
-							s3store.SetProgress(func(done, total int) {
-								if total > downloadedBytes {
-									downloadedBytes = total
-								}
-								printer(done, total)
-							})
+							s3store.SetProgress(actions.ProgressPrinter("Downloading"))
+							s3store.SetOnDownloaded(actions.LogDownloadComplete)
+							s3store.SetOnUnarchived(actions.LogUnarchiveComplete)
 						}
 						// Track the progress of restoring the dump into the database.
 						if pgdb, ok := db.(*database.Postgres); ok {
 							pgdb.SetProgress(actions.ProgressPrinter("Restoring"))
 						}
-						// Log the current time and total bytes downloaded between
-						// the download and the restore steps.
-						restore := usecases.NewDumpRestore(db, store)
-						restore.OnDownloaded = func(size int) {
-							if downloadedBytes > 0 {
-								size = downloadedBytes
-							}
-							actions.LogDownloadComplete(size)
-						}
 						return (actions.DumpRestore{
-							UseCase: restore,
+							UseCase: usecases.NewDumpRestore(db, store),
 						}).Action(c)
 					},
 				},
