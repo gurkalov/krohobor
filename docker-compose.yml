@@ -12,6 +12,19 @@ services:
     links:
       - postgres-source
 
+  minio:
+    image: ghcr.io/librefs/librefs:latest
+    restart: always
+    command: server /data --console-address ":9001"
+    volumes:
+      - krohobor-minio:/data
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+
   postgres-source:
     image: ${IMAGE_POSTGRES}
     restart: always
@@ -36,5 +49,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
 volumes:
+  krohobor-minio:
   krohobor-postgres-source:
   krohobor-postgres-target:

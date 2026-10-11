@@ -4,13 +4,22 @@ app:
   format: "20060102_150405"
   password: "TesTPassWord"
   database: "postgres-source"
-  storage: "local"
+  storage: "s3"
 
 storages:
   - name: "local"
     driver: "file"
     options:
       catalog: "/tmp/backup"
+
+  - name: "s3"
+    driver: "s3"
+    options:
+      catalog: "krohobor-backup"
+      keyid: "minioadmin"
+      accesskey: "minioadmin"
+      region: "us-east-1"
+      endpoint: "http://minio:9000"
 
 databases:
   - name: "postgres-source"

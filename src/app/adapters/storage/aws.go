@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"krohobor/app/adapters/archive"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type AwsS3 struct {
@@ -39,6 +41,7 @@ func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) AwsS3 {
 
 	client := s3.NewFromConfig(conf, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(cfg.Endpoint)
+		o.UsePathStyle = true // bucket in the URL path (required for MinIO/S3-compatible endpoints)
 	})
 
 	return AwsS3{cfg.Catalog, arch, client}
@@ -51,6 +54,10 @@ func (s AwsS3) Check() error {
 		}
 	}
 
+	if err := s.ensureBucket(context.TODO()); err != nil {
+		return err
+	}
+
 	_, err := s.client.GetBucketVersioning(context.TODO(), &s3.GetBucketVersioningInput{
 		Bucket: aws.String(s.bucket),
 	})
@@ -59,6 +66,37 @@ func (s AwsS3) Check() error {
 	}
 
 	return nil
+}
+
+// ensureBucket creates the bucket if it does not exist yet.
+// This makes the storage self-sufficient for local testing (fresh MinIO/librefs
+// instance) without a separate bucket bootstrap step.
+func (s AwsS3) ensureBucket(ctx context.Context) error {
+	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(s.bucket),
+	})
+	if err == nil {
+		return nil
+	}
+
+	var notFound *types.NotFound
+	if !errors.As(err, &notFound) {
+		return err
+	}
+
+	_, createErr := s.client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(s.bucket),
+	})
+	if createErr == nil {
+		return nil
+	}
+
+	var alreadyOwned *types.BucketAlreadyOwnedByYou
+	var alreadyExists *types.BucketAlreadyExists
+	if errors.As(createErr, &alreadyOwned) || errors.As(createErr, &alreadyExists) {
+		return nil
+	}
+	return createErr
 }
 
 func (s AwsS3) Filename(filename string) string {
@@ -112,6 +150,10 @@ func (s AwsS3) Write(filename string) error {
 			return err
 		}
 		fname = archFile
+	}
+
+	if err := s.ensureBucket(context.TODO()); err != nil {
+		return err
 	}
 
 	file, err := os.Open(fname)
