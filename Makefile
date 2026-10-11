@@ -11,7 +11,7 @@ build:
 	docker build -t ${NAMESPACE}/${IMAGE}${TAG} .
 
 push:
-	docker push ${NAMESPACE}/${IMAGE}
+	docker push ${NAMESPACE}/${IMAGE}${TAG}
 
 up:
 	docker-compose up -d

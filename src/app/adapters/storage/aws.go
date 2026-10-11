@@ -8,12 +8,10 @@ import (
 	cfgApp "krohobor/app/adapters/config"
 	"os"
 	"path/filepath"
-	"runtime/debug"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -80,12 +78,16 @@ func (s AwsS3) Read(filename string) (string, error) {
 
 	defer file.Close()
 
-	downloader := s3manager.NewDownloader(s.client)
-	_, err = downloader.Download(context.TODO(), file, &s3.GetObjectInput{
+	obj, err := s.client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(filename),
 	})
 	if err != nil {
+		return "", err
+	}
+	defer obj.Body.Close()
+
+	if _, err = io.Copy(file, obj.Body); err != nil {
 		return "", err
 	}
 
@@ -181,72 +183,4 @@ func (s AwsS3) List() ([]string, error) {
 	}
 
 	return out, nil
-}
-
-// Logger is a logger use for logging the readers usage.
-type Logger interface {
-	Log(args ...interface{})
-}
-
-// ReadSeeker interface provides the interface for a Reader, Seeker, and ReadAt.
-type ReadSeeker interface {
-	io.ReadSeeker
-	io.ReaderAt
-}
-
-// ReadLogger wraps an reader with logging for access.
-type ReadLogger struct {
-	reader ReadSeeker
-	logger Logger
-}
-
-// NewReadLogger a ReadLogger that wraps the passed in ReadSeeker (Reader,
-// Seeker, ReadAt) with a logger.
-func NewReadLogger(r ReadSeeker, logger Logger) *ReadLogger {
-	return &ReadLogger{
-		reader: r,
-		logger: logger,
-	}
-}
-
-// Seek offsets the reader's current position for the next read.
-func (s *ReadLogger) Seek(offset int64, mode int) (int64, error) {
-	newOffset, err := s.reader.Seek(offset, mode)
-	msg := fmt.Sprintf(
-		"ReadLogger.Seek(offset:%d, mode:%d) (newOffset:%d, err:%v)",
-		offset, mode, newOffset, err)
-	if err != nil {
-		msg += fmt.Sprintf("\n\tStack:\n%s", string(debug.Stack()))
-	}
-
-	s.logger.Log(msg)
-	return s.reader.Seek(offset, mode)
-}
-
-// Read attempts to read from the reader, returning the bytes read, or error.
-func (s *ReadLogger) Read(b []byte) (int, error) {
-	n, err := s.reader.Read(b)
-	msg := fmt.Sprintf(
-		"ReadLogger.Read(len(bytes):%d) (read:%d, err:%v)",
-		len(b), n, err)
-	if err != nil {
-		msg += fmt.Sprintf("\n\tStack:\n%s", string(debug.Stack()))
-	}
-
-	s.logger.Log(msg)
-	return n, err
-}
-
-// ReadAt will read the underlying reader starting at the offset.
-func (s *ReadLogger) ReadAt(b []byte, offset int64) (int, error) {
-	n, err := s.reader.ReadAt(b, offset)
-	msg := fmt.Sprintf(
-		"ReadLogger.ReadAt(len(bytes):%d, offset:%d) (read:%d, err:%v)",
-		len(b), offset, n, err)
-	if err != nil {
-		msg += fmt.Sprintf("\n\tStack:\n%s", string(debug.Stack()))
-	}
-
-	s.logger.Log(msg)
-	return n, err
 }
