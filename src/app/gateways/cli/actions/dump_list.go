@@ -21,6 +21,8 @@ func (d DumpList) Action(c *cli.Context) error {
 	}
 
 	pr := tsv.Presenter{}
-
+	if c.Bool("human") {
+		return pr.PrintHuman(resp.List)
+	}
 	return pr.Print(resp.List)
 }

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"krohobor/app/adapters/archive"
+	"krohobor/app/domain"
 	"reflect"
 	"testing"
 )
@@ -238,26 +239,26 @@ func TestFile_List(t *testing.T) {
 	tests := []struct {
 		name    string
 		file    File
-		want    []string
+		want    []domain.Dump
 		wantErr bool
 	}{
 		{
 			name: "List with archive - successful",
 			file: NewFile(storageDir, arch),
-			want: []string{
-				"file1.txt",
-				"file2.txt",
+			want: []domain.Dump{
+				{Name: "file1.txt"},
+				{Name: "file2.txt"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "List without archive - successful",
 			file: NewFile(storageDir, nil),
-			want: []string{
-				"file1.txt",
-				"file1.txt.zip",
-				"file2.txt",
-				"file2.txt.zip",
+			want: []domain.Dump{
+				{Name: "file1.txt", Size: 5},
+				{Name: "file1.txt.zip"},
+				{Name: "file2.txt", Size: 5},
+				{Name: "file2.txt.zip"},
 			},
 			wantErr: false,
 		},
@@ -269,8 +270,19 @@ func TestFile_List(t *testing.T) {
 				t.Errorf("File.List() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("File.List() = %v, want %v", got, tt.want)
+			if len(got) != len(tt.want) {
+				t.Fatalf("File.List() len = %d, want %d", len(got), len(tt.want))
+			}
+			for i := range got {
+				if got[i].Name != tt.want[i].Name {
+					t.Errorf("File.List()[%d].Name = %v, want %v", i, got[i].Name, tt.want[i].Name)
+				}
+				if tt.want[i].Size > 0 && got[i].Size != tt.want[i].Size {
+					t.Errorf("File.List()[%d].Size = %v, want %v", i, got[i].Size, tt.want[i].Size)
+				}
+				if tt.want[i].Size == 0 && got[i].Size <= 0 {
+					t.Errorf("File.List()[%d].Size = %v, want > 0", i, got[i].Size)
+				}
 			}
 		})
 	}

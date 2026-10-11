@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"krohobor/app/adapters/storage"
+	"krohobor/app/domain"
 )
 
 type DumpListInterface interface {
@@ -16,7 +17,7 @@ type DumpListRequest struct {
 }
 
 type DumpListResponse struct {
-	List []string
+	List []domain.Dump
 }
 
 func NewDumpList(store storage.Interface) *DumpList {

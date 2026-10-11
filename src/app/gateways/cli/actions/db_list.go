@@ -20,5 +20,8 @@ func (d DbList) Action(c *cli.Context) error {
 	}
 
 	pr := tsv.Presenter{}
+	if c.Bool("h") {
+		return pr.PrintHuman(resp.List)
+	}
 	return pr.Print(resp.List)
 }

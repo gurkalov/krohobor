@@ -3,6 +3,7 @@ package usecases
 import (
 	"krohobor/app/adapters/archive"
 	"krohobor/app/adapters/storage"
+	"krohobor/app/domain"
 	"reflect"
 	"testing"
 )
@@ -67,9 +68,9 @@ func TestDumpList_Execute(t *testing.T) {
 				request: DumpListRequest{},
 			},
 			want: DumpListResponse{
-				List: []string{
-					"file1.txt",
-					"file2.txt",
+				List: []domain.Dump{
+					{Name: "file1.txt"},
+					{Name: "file2.txt"},
 				},
 			},
 		},
@@ -82,11 +83,11 @@ func TestDumpList_Execute(t *testing.T) {
 				request: DumpListRequest{},
 			},
 			want: DumpListResponse{
-				List: []string{
-					"file1.txt",
-					"file1.txt.zip",
-					"file2.txt",
-					"file2.txt.zip",
+				List: []domain.Dump{
+					{Name: "file1.txt", Size: 5},
+					{Name: "file1.txt.zip"},
+					{Name: "file2.txt", Size: 5},
+					{Name: "file2.txt.zip"},
 				},
 			},
 		},
@@ -101,8 +102,19 @@ func TestDumpList_Execute(t *testing.T) {
 				t.Errorf("DumpList.Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DumpList.Execute() = %v, want %v", got, tt.want)
+			if len(got.List) != len(tt.want.List) {
+				t.Fatalf("DumpList.Execute() len = %d, want %d", len(got.List), len(tt.want.List))
+			}
+			for i := range got.List {
+				if got.List[i].Name != tt.want.List[i].Name {
+					t.Errorf("DumpList.Execute()[%d].Name = %v, want %v", i, got.List[i].Name, tt.want.List[i].Name)
+				}
+				if tt.want.List[i].Size > 0 && got.List[i].Size != tt.want.List[i].Size {
+					t.Errorf("DumpList.Execute()[%d].Size = %v, want %v", i, got.List[i].Size, tt.want.List[i].Size)
+				}
+				if tt.want.List[i].Size == 0 && got.List[i].Size <= 0 {
+					t.Errorf("DumpList.Execute()[%d].Size = %v, want > 0", i, got.List[i].Size)
+				}
 			}
 		})
 	}

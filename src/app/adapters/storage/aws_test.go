@@ -5,6 +5,7 @@ package storage
 
 import (
 	"krohobor/app/adapters/archive"
+	"krohobor/app/domain"
 	"reflect"
 	"testing"
 )
@@ -362,7 +363,7 @@ func TestAwsS3_List(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    []string
+		want    []domain.Dump
 		wantErr bool
 	}{
 		{
@@ -371,9 +372,9 @@ func TestAwsS3_List(t *testing.T) {
 				bucket:  bucket,
 				archive: arch,
 			},
-			want: []string{
-				"file1",
-				"file2",
+			want: []domain.Dump{
+				{Name: "file1"},
+				{Name: "file2"},
 			},
 			wantErr: false,
 		},
@@ -383,9 +384,9 @@ func TestAwsS3_List(t *testing.T) {
 				bucket:  bucket,
 				archive: nil,
 			},
-			want: []string{
-				"file1",
-				"file2",
+			want: []domain.Dump{
+				{Name: "file1"},
+				{Name: "file2"},
 			},
 			wantErr: false,
 		},
@@ -398,8 +399,16 @@ func TestAwsS3_List(t *testing.T) {
 				t.Errorf("AwsS3.List() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("AwsS3.List() = %v, want %v", got, tt.want)
+			if len(got) != len(tt.want) {
+				t.Fatalf("AwsS3.List() len = %d, want %d", len(got), len(tt.want))
+			}
+			for i := range got {
+				if got[i].Name != tt.want[i].Name {
+					t.Errorf("AwsS3.List()[%d].Name = %v, want %v", i, got[i].Name, tt.want[i].Name)
+				}
+				if got[i].Size < 0 {
+					t.Errorf("AwsS3.List()[%d].Size = %v, want >= 0", i, got[i].Size)
+				}
 			}
 		})
 	}

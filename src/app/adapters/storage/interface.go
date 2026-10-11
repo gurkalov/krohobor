@@ -1,5 +1,9 @@
 package storage
 
+import (
+	"krohobor/app/domain"
+)
+
 type Interface interface {
 	Check() error
 	Filename(string) string
@@ -7,5 +11,5 @@ type Interface interface {
 	Read(string) (string, error)
 	Delete(string) error
 	Clean(string) error
-	List() ([]string, error)
+	List() ([]domain.Dump, error)
 }

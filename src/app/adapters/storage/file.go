@@ -3,6 +3,7 @@ package storage
 import (
 	"io/ioutil"
 	"krohobor/app/adapters/archive"
+	"krohobor/app/domain"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,25 +110,26 @@ func (s File) Clean(filename string) error {
 	return os.Remove(filename)
 }
 
-func (s File) List() ([]string, error) {
-	var result []string
+func (s File) List() ([]domain.Dump, error) {
+	var result []domain.Dump
 
 	err := filepath.Walk(s.dir, func(path string, info os.FileInfo, err error) error {
 		if s.dir != path {
 			filename := path[len(s.dir)+1:]
+			size := int(info.Size())
 			if s.archive != nil && s.archive.Ext() != "" {
 				if s.archive.Ext() == filepath.Ext(filename) {
 					filename = strings.TrimSuffix(filename, s.archive.Ext())
-					result = append(result, filename)
+					result = append(result, domain.Dump{Name: filename, Size: size})
 				}
 			} else {
-				result = append(result, filename)
+				result = append(result, domain.Dump{Name: filename, Size: size})
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return []string{}, err
+		return []domain.Dump{}, err
 	}
 
 	return result, nil

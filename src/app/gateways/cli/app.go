@@ -57,6 +57,13 @@ func UseStorage(name string, cfg config.Config) (storage.Interface, error) {
 func App(cfg config.Config) *cli.App {
 	app := &cli.App{}
 
+	// Use "help" only for the built-in help flag so that "h" can be used
+	// as a command flag (human-readable size for "db list").
+	cli.HelpFlag = &cli.BoolFlag{
+		Name:  "help",
+		Usage: "show help",
+	}
+
 	var db database.Interface
 	var store storage.Interface
 	initDeps := func(c *cli.Context) error {
@@ -137,6 +144,12 @@ func App(cfg config.Config) *cli.App {
 				{
 					Name:  "list",
 					Usage: "list of databases",
+					Flags: []cli.Flag{
+						&cli.BoolFlag{
+							Name:  "h",
+							Usage: "show human-readable size",
+						},
+					},
 					Action: func(c *cli.Context) error {
 						return (actions.DbList{
 							UseCase: usecases.NewDbList(db),
@@ -190,6 +203,12 @@ func App(cfg config.Config) *cli.App {
 				{
 					Name:  "list",
 					Usage: "list of dumps",
+					Flags: []cli.Flag{
+						&cli.BoolFlag{
+							Name:  "human",
+							Usage: "show human-readable size",
+						},
+					},
 					Action: func(c *cli.Context) error {
 						return (actions.DumpList{
 							UseCase: usecases.NewDumpList(store),

@@ -6,6 +6,7 @@ import (
 	"io"
 	"krohobor/app/adapters/archive"
 	cfgApp "krohobor/app/adapters/config"
+	"krohobor/app/domain"
 	"os"
 	"path/filepath"
 
@@ -168,8 +169,8 @@ func (s AwsS3) Clean(filename string) error {
 	return os.Remove(filename)
 }
 
-func (s AwsS3) List() ([]string, error) {
-	var out []string
+func (s AwsS3) List() ([]domain.Dump, error) {
+	var out []domain.Dump
 
 	result, err := s.client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
 		Bucket: aws.String(s.bucket),
@@ -179,7 +180,7 @@ func (s AwsS3) List() ([]string, error) {
 	}
 
 	for _, item := range result.Contents {
-		out = append(out, *item.Key)
+		out = append(out, domain.Dump{Name: *item.Key, Size: int(*item.Size)})
 	}
 
 	return out, nil
