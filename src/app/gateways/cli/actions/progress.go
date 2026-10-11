@@ -2,7 +2,9 @@ package actions
 
 import (
 	"fmt"
+	"krohobor/app/adapters/presenter/tsv"
 	"os"
+	"time"
 )
 
 // ProgressPrinter returns a callback that renders a progress bar to stderr.
@@ -34,4 +36,10 @@ func ProgressPrinter(label string) func(done, total int) {
 			fmt.Fprintln(os.Stderr)
 		}
 	}
+}
+
+// LogDownloadComplete logs the finish of the S3 download between the download
+// and restore steps: the current time and the total bytes downloaded.
+func LogDownloadComplete(size int) {
+	fmt.Fprintf(os.Stderr, "%s  Downloaded %s\n", time.Now().Format("2006-01-02 15:04:05"), tsv.HumanSize(size))
 }
