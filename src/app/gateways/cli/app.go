@@ -188,6 +188,10 @@ func App(cfg config.Config) *cli.App {
 					Name:  "create",
 					Usage: "create dump",
 					Action: func(c *cli.Context) error {
+						// Track the progress of loading the dump to S3 storage.
+						if s3store, ok := store.(*storage.AwsS3); ok {
+							s3store.SetProgress(actions.S3ProgressPrinter())
+						}
 						return (actions.DumpCreate{
 							UseCase: usecases.NewDumpCreate(db, store),
 						}).Action(c, cfg.App)

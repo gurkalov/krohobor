@@ -19,12 +19,13 @@ import (
 )
 
 type AwsS3 struct {
-	bucket  string
-	archive archive.Interface
-	client  *s3.Client
+	bucket   string
+	archive  archive.Interface
+	client   *s3.Client
+	progress func(done, total int)
 }
 
-func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) AwsS3 {
+func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) *AwsS3 {
 	creds := credentials.NewStaticCredentialsProvider(
 		cfg.KeyId,
 		cfg.AccessKey,
@@ -36,7 +37,7 @@ func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) AwsS3 {
 		config.WithCredentialsProvider(creds),
 	)
 	if err != nil {
-		return AwsS3{}
+		return &AwsS3{}
 	}
 
 	client := s3.NewFromConfig(conf, func(o *s3.Options) {
@@ -44,7 +45,12 @@ func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) AwsS3 {
 		o.UsePathStyle = true // bucket in the URL path (required for MinIO/S3-compatible endpoints)
 	})
 
-	return AwsS3{cfg.Catalog, arch, client}
+	return &AwsS3{bucket: cfg.Catalog, archive: arch, client: client}
+}
+
+// SetProgress registers a callback invoked as a dump is uploaded to S3.
+func (s *AwsS3) SetProgress(p func(done, total int)) {
+	s.progress = p
 }
 
 func (s AwsS3) Check() error {
@@ -163,10 +169,25 @@ func (s AwsS3) Write(filename string) error {
 	defer file.Close()
 
 	key := filepath.Base(fname)
+
+	body := io.Reader(file)
+	if s.progress != nil {
+		var total int
+		if info, statErr := file.Stat(); statErr == nil {
+			total = int(info.Size())
+		}
+		body = &progressReader{r: file, total: total, cb: s.progress}
+	}
+
 	_, err = s.client.PutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
-		Body:   file,
+		Body:   body,
+	}, func(o *s3.Options) {
+		// The counting progress reader is not seekable, and the SDK would
+		// otherwise pre-read the whole body to compute a checksum header.
+		// MinIO/librefs do not require checksums, so skip the calculation.
+		o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
 	})
 
 	if err != nil {
@@ -226,4 +247,28 @@ func (s AwsS3) List() ([]domain.Dump, error) {
 	}
 
 	return out, nil
+}
+
+// progressReader wraps an io.Reader and reports bytes read to a callback.
+type progressReader struct {
+	r     io.ReadSeeker
+	done  int
+	total int
+	cb    func(done, total int)
+}
+
+func (p *progressReader) Read(b []byte) (int, error) {
+	n, err := p.r.Read(b)
+	p.done += n
+	if p.done > p.total {
+		p.done = p.total // the SDK may rewind and re-read the body
+	}
+	if p.cb != nil {
+		p.cb(p.done, p.total)
+	}
+	return n, err
+}
+
+func (p *progressReader) Seek(offset int64, whence int) (int64, error) {
+	return p.r.Seek(offset, whence)
 }
