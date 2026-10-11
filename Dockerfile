@@ -1,4 +1,4 @@
-FROM golang:1.17.2-alpine3.14 as builder
+FROM golang:1.26.5-alpine3.24 as builder
 
 WORKDIR /go/src/github.com/gurkalov/krohobor
 
@@ -9,19 +9,19 @@ RUN go mod download
 
 COPY ./src .
 
-RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/krohobor ./cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/krohobor ./cmd
 
 
-FROM ubuntu:20.04
+FROM ubuntu:26.04
 
 RUN apt-get update
 RUN apt-get install -y wget gnupg2
 
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list
-RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
-RUN apt-get -y update
+RUN apt-get install -y postgresql-common ca-certificates
+RUN /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 
-RUN apt-get install -y postgresql-client-14 zip
+RUN apt-get -y update
+RUN apt-get install -y postgresql-client-18 zip
 
 WORKDIR /root
 

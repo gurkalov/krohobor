@@ -3,18 +3,18 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/s3manager"
 	"io"
-	"io/ioutil"
 	"krohobor/app/adapters/archive"
-	"krohobor/app/adapters/config"
+	cfgApp "krohobor/app/adapters/config"
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 type AwsS3 struct {
@@ -23,72 +23,26 @@ type AwsS3 struct {
 	client  *s3.Client
 }
 
-func NewAwsS3(cfg config.AwsS3Config, arch archive.Interface) AwsS3 {
-	conf, err := external.LoadDefaultAWSConfig(
-		external.WithRegion(cfg.Region),
-		external.WithCredentialsValue(aws.Credentials{
-			AccessKeyID:     cfg.KeyId,
-			SecretAccessKey: cfg.AccessKey,
-		}),
+func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) AwsS3 {
+	creds := credentials.NewStaticCredentialsProvider(
+		cfg.KeyId,
+		cfg.AccessKey,
+		"", // Session token (empty for most S3-compatible services)
+	)
+
+	conf, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(cfg.Region),
+		config.WithCredentialsProvider(creds),
 	)
 	if err != nil {
 		return AwsS3{}
 	}
 
-	return AwsS3{cfg.Catalog, arch, s3.New(conf)}
-}
-
-func NewAwsS3Test(bucket string, arch archive.Interface) AwsS3 {
-	conf, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return AwsS3{}
-	}
-
-	client := s3.New(conf)
-
-	iter := s3manager.NewDeleteListIterator(client, &s3.ListObjectsInput{
-		Bucket: aws.String(bucket),
+	client := s3.NewFromConfig(conf, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(cfg.Endpoint)
 	})
-	if err := s3manager.NewBatchDeleteWithClient(client).Delete(context.TODO(), iter); err != nil {
-		fmt.Println(err)
-	}
 
-	reqDelete := client.DeleteBucketRequest(&s3.DeleteBucketInput{
-		Bucket: aws.String(bucket),
-	})
-	_, err = reqDelete.Send(context.TODO())
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	reqCreate := client.CreateBucketRequest(&s3.CreateBucketInput{
-		Bucket: aws.String(bucket),
-	})
-	_, err = reqCreate.Send(context.TODO())
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	awsS3 := AwsS3{bucket, arch, client}
-
-	d1 := []byte("hello")
-	if err := ioutil.WriteFile("/tmp/file1", d1, 0644); err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile("/tmp/file2", d1, 0644); err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile("/tmp/file3", d1, 0644); err != nil {
-		panic(err)
-	}
-	if err := ioutil.WriteFile("/tmp/file4", d1, 0644); err != nil {
-		panic(err)
-	}
-
-	_ = awsS3.Write("file1")
-	_ = awsS3.Write("file2")
-
-	return awsS3
+	return AwsS3{cfg.Catalog, arch, client}
 }
 
 func (s AwsS3) Check() error {
@@ -98,19 +52,14 @@ func (s AwsS3) Check() error {
 		}
 	}
 
-	conf, err := external.LoadDefaultAWSConfig()
+	_, err := s.client.GetBucketVersioning(context.TODO(), &s3.GetBucketVersioningInput{
+		Bucket: aws.String(s.bucket),
+	})
 	if err != nil {
 		return err
 	}
 
-	svc := s3.New(conf)
-	req := svc.GetBucketVersioningRequest(&s3.GetBucketVersioningInput{
-		Bucket: &s.bucket,
-	})
-
-	_, err = req.Send(context.TODO())
-
-	return err
+	return nil
 }
 
 func (s AwsS3) Filename(filename string) string {
@@ -131,12 +80,11 @@ func (s AwsS3) Read(filename string) (string, error) {
 
 	defer file.Close()
 
-	downloader := s3manager.NewDownloader(s.client.Config)
-	_, err = downloader.Download(file,
-		&s3.GetObjectInput{
-			Bucket: aws.String(s.bucket),
-			Key:    aws.String(filename),
-		})
+	downloader := s3manager.NewDownloader(s.client)
+	_, err = downloader.Download(context.TODO(), file, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(filename),
+	})
 	if err != nil {
 		return "", err
 	}
@@ -169,20 +117,13 @@ func (s AwsS3) Write(filename string) error {
 	}
 	defer file.Close()
 
-	readLogger := NewReadLogger(file, s.client.Config.Logger)
-
 	key := filepath.Base(fname)
-
-	uploader := s3manager.NewUploader(s.client.Config)
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: &s.bucket,
-		Key:    &key,
-		Body:   readLogger,
-	}, func(u *s3manager.Uploader) {
-		u.Concurrency = 1
-		u.RequestOptions = append(u.RequestOptions, func(r *aws.Request) {
-		})
+	_, err = s.client.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+		Body:   file,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -204,14 +145,16 @@ func (s AwsS3) Delete(filename string) error {
 		filename = filename + s.archive.Ext()
 	}
 
-	req := s.client.DeleteObjectRequest(&s3.DeleteObjectInput{
-		Bucket: &s.bucket,
+	_, err := s.client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+		Bucket: aws.String(s.bucket),
 		Key:    aws.String(filename),
 	})
 
-	_, err := req.Send(context.TODO())
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (s AwsS3) Clean(filename string) error {
@@ -224,24 +167,20 @@ func (s AwsS3) Clean(filename string) error {
 }
 
 func (s AwsS3) List() ([]string, error) {
-	var result []string
+	var out []string
 
-	req := s.client.ListObjectsRequest(&s3.ListObjectsInput{Bucket: &s.bucket})
-	p := s3.NewListObjectsPaginator(req)
-	for p.Next(context.TODO()) {
-		page := p.CurrentPage()
-		for _, obj := range page.Contents {
-			if s.archive != nil && s.archive.Ext() != "" {
-				if s.archive.Ext() == filepath.Ext(*obj.Key) {
-					result = append(result, strings.TrimSuffix(*obj.Key, s.archive.Ext()))
-				}
-			} else {
-				result = append(result, *obj.Key)
-			}
-		}
+	result, err := s.client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
+		Bucket: aws.String(s.bucket),
+	})
+	if err != nil {
+		return out, err
 	}
 
-	return result, nil
+	for _, item := range result.Contents {
+		out = append(out, *item.Key)
+	}
+
+	return out, nil
 }
 
 // Logger is a logger use for logging the readers usage.

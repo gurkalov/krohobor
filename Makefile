@@ -1,4 +1,4 @@
-NAMESPACE=gurkalov
+NAMESPACE = ognestraz
 SERVICE := krohobor
 IMAGE := $(or ${image},${image},krohobor)
 GIT_TAG := $(shell git tag -l --points-at HEAD | cut -d "v" -f 2)

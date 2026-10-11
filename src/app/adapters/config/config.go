@@ -36,6 +36,7 @@ type AwsS3Config struct {
 	KeyId     string
 	AccessKey string
 	Region    string
+	Endpoint  string
 }
 
 type FileConfig struct {
