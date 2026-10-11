@@ -189,13 +189,25 @@ func App(cfg config.Config) *cli.App {
 					Name:  "create",
 					Usage: "create dump",
 					Action: func(c *cli.Context) error {
-						// Track the progress of loading the dump to S3 storage.
+						start := time.Now()
+						actions.LogOperationStart("Dump create")
+
+						// Track the progress of loading the dump to S3 storage
+						// and log the archive before upload.
 						if s3store, ok := store.(*storage.AwsS3); ok {
 							s3store.SetProgress(actions.ProgressPrinter("Uploading"))
+							s3store.SetOnArchived(actions.LogArchiveComplete)
 						}
-						return (actions.DumpCreate{
-							UseCase: usecases.NewDumpCreate(db, store),
+						// Log the size of the dump file after it is written.
+						create := usecases.NewDumpCreate(db, store)
+						create.OnDumped = actions.LogDumpComplete
+
+						err := (actions.DumpCreate{
+							UseCase: create,
 						}).Action(c, cfg.App)
+
+						actions.LogOperationFinished("Dump create", time.Since(start))
+						return err
 					},
 				},
 				{
@@ -218,7 +230,7 @@ func App(cfg config.Config) *cli.App {
 					Usage: "restore dump",
 					Action: func(c *cli.Context) error {
 						start := time.Now()
-						actions.LogRestoreStart()
+						actions.LogOperationStart("Restore")
 
 						// Track the progress of downloading the dump from S3 storage
 						// and log the download and unarchive between the steps.
@@ -236,7 +248,7 @@ func App(cfg config.Config) *cli.App {
 							UseCase: usecases.NewDumpRestore(db, store),
 						}).Action(c)
 
-						actions.LogRestoreFinished(time.Since(start))
+						actions.LogOperationFinished("Restore", time.Since(start))
 						return err
 					},
 				},

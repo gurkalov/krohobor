@@ -40,15 +40,27 @@ func ProgressPrinter(label string) func(done, total int) {
 
 const logTimeLayout = "2006-01-02 15:04:05"
 
-// LogRestoreStart logs the start of the dump restore, before the download.
-func LogRestoreStart() {
-	fmt.Fprintf(os.Stderr, "%s  Restore started\n", time.Now().Format(logTimeLayout))
+// LogOperationStart logs the start of an operation (e.g. "Restore", "Dump create").
+func LogOperationStart(operation string) {
+	fmt.Fprintf(os.Stderr, "%s  %s started\n", time.Now().Format(logTimeLayout), operation)
 }
 
-// LogRestoreFinished logs the finish of the dump restore: the current time and
-// the total elapsed time (download + unarchive + restore).
-func LogRestoreFinished(duration time.Duration) {
-	fmt.Fprintf(os.Stderr, "%s  Restore finished in %s\n", time.Now().Format(logTimeLayout), duration.Round(time.Millisecond))
+// LogOperationFinished logs the finish of an operation: the current time and the
+// total elapsed time of the whole operation.
+func LogOperationFinished(operation string, duration time.Duration) {
+	fmt.Fprintf(os.Stderr, "%s  %s finished in %s\n", time.Now().Format(logTimeLayout), operation, duration.Round(time.Millisecond))
+}
+
+// LogDumpComplete logs the dump file written to disk: the current time and
+// the size of the dump.
+func LogDumpComplete(size int) {
+	fmt.Fprintf(os.Stderr, "%s  Dumped %s\n", time.Now().Format(logTimeLayout), tsv.HumanSize(size))
+}
+
+// LogArchiveComplete logs the finish of archiving a dump before upload:
+// the current time, the archived size and the time it took.
+func LogArchiveComplete(size int, duration time.Duration) {
+	fmt.Fprintf(os.Stderr, "%s  Archived %s in %s\n", time.Now().Format(logTimeLayout), tsv.HumanSize(size), duration.Round(time.Millisecond))
 }
 
 // LogDownloadComplete logs the finish of the S3 download between the download

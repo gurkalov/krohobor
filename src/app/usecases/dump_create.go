@@ -3,6 +3,7 @@ package usecases
 import (
 	"krohobor/app/adapters/database"
 	"krohobor/app/adapters/storage"
+	"os"
 )
 
 type DumpCreateInterface interface {
@@ -12,6 +13,10 @@ type DumpCreateInterface interface {
 type DumpCreate struct {
 	db    database.Interface
 	store storage.Interface
+
+	// OnDumped is invoked after the dump file is written by the database and
+	// before it is archived and uploaded to storage, with the dump size in bytes.
+	OnDumped func(size int)
 }
 
 type DumpCreateRequest struct {
@@ -24,7 +29,7 @@ type DumpCreateResponse struct {
 }
 
 func NewDumpCreate(db database.Interface, store storage.Interface) *DumpCreate {
-	return &DumpCreate{db, store}
+	return &DumpCreate{db: db, store: store}
 }
 
 func (dd *DumpCreate) Execute(request DumpCreateRequest) (DumpCreateResponse, error) {
@@ -39,6 +44,12 @@ func (dd *DumpCreate) Execute(request DumpCreateRequest) (DumpCreateResponse, er
 	} else {
 		if err := dd.db.Dump(request.DbNames[0], filename); err != nil {
 			return response, err
+		}
+	}
+
+	if dd.OnDumped != nil {
+		if info, statErr := os.Stat(filename); statErr == nil {
+			dd.OnDumped(int(info.Size()))
 		}
 	}
 

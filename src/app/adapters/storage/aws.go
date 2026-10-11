@@ -26,6 +26,7 @@ type AwsS3 struct {
 	progress     func(done, total int)
 	onDownloaded func(size int)
 	onUnarchived func(size int, duration time.Duration)
+	onArchived   func(size int, duration time.Duration)
 }
 
 func NewAwsS3(cfg cfgApp.AwsS3Config, arch archive.Interface) *AwsS3 {
@@ -67,6 +68,12 @@ func (s *AwsS3) SetOnDownloaded(fn func(size int)) {
 // extracted, with the size of the unarchived file and the time it took.
 func (s *AwsS3) SetOnUnarchived(fn func(size int, duration time.Duration)) {
 	s.onUnarchived = fn
+}
+
+// SetOnArchived registers a callback invoked after a dump is archived before
+// upload, with the size of the archive and the time it took.
+func (s *AwsS3) SetOnArchived(fn func(size int, duration time.Duration)) {
+	s.onArchived = fn
 }
 
 func (s AwsS3) Check() error {
@@ -193,8 +200,16 @@ func (s AwsS3) Write(filename string) error {
 	fname := filename
 	if s.archive != nil {
 		archFile := fname + s.archive.Ext()
+		start := time.Now()
 		if err := s.archive.Archive(archFile, fname); err != nil {
 			return err
+		}
+		if s.onArchived != nil {
+			size := 0
+			if info, statErr := os.Stat(archFile); statErr == nil {
+				size = int(info.Size())
+			}
+			s.onArchived(size, time.Since(start))
 		}
 		fname = archFile
 	}
